@@ -1,0 +1,13 @@
+openai
+speechrecognition
+pyttsx3
+gTTS
+pygame
+selenium
+webdriver-manager
+Flask
+Flask-Cors
+python-dotenv
+pyaudio
+Flask-SocketIO
+pyautogui
