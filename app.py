@@ -533,9 +533,9 @@ def handle_toggle_listening(data):
     else:
         background_voice_listener.stop()
 
-if __name__ == '__main__':
-    # Start the robust voice listener in the background immediately
-    background_voice_listener.start()
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host="0.0.0.0", port=port)
     
     # Start the Flask API server with SocketIO (gevent async)
     print(f"[Shubham AI Server] Starting API + Socket.IO on http://localhost:{config.PORT}")
