@@ -98,7 +98,9 @@ class WhatsAppService:
         try:
             return future.result(timeout=60)
         except Exception as e:
-            print(f"[WhatsApp Service] Task {task_type} failed: {e}")
+            import traceback
+            print(f"[WhatsApp Service] Task {task_type} failed:")
+            print(traceback.format_exc())
             raise e
 
     def _queue_worker(self):

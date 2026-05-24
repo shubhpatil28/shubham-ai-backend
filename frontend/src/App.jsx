@@ -8,6 +8,10 @@ import SiteBuilder from './components/SiteBuilder';
 import WhatsAppHub from './components/WhatsAppHub';
 import MemoryVault from './components/MemoryVault';
 import RouteIndicator from './components/RouteIndicator';
+import AIOrb from './components/AIOrb';
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:5000');
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('core'); // core | whatsapp | memory | builder
@@ -132,48 +136,13 @@ const App = () => {
   };
 
   const toggleVoiceListen = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      addLog("Web Speech API not supported in this browser.", "error");
-      alert("Voice recognition is not supported by your browser. Please try Chrome.");
-      return;
+    setIsBrowserListening(!isBrowserListening);
+    socket.emit('toggle_listening', { enable: !isBrowserListening });
+    if (!isBrowserListening) {
+      addLog("Remote mic listening triggered via WebSocket.", "system");
+    } else {
+      addLog("Remote mic listening disabled.", "system");
     }
-
-    if (isBrowserListening) {
-      setIsBrowserListening(false);
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.lang = 'mr-IN'; 
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      setIsBrowserListening(true);
-      setCoreStatus('listening');
-      addLog("Browser Mic opened. Listening...", "system");
-    };
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      addLog(`Mic Recognized: "${transcript}"`, "system");
-      processInput(transcript);
-    };
-
-    recognition.onerror = (event) => {
-      console.error(event);
-      addLog(`Voice Error: ${event.error}`, "error");
-      setIsBrowserListening(false);
-      setCoreStatus('sleeping');
-    };
-
-    recognition.onend = () => {
-      setIsBrowserListening(false);
-      setCoreStatus(prev => prev === 'listening' ? 'sleeping' : prev);
-    };
-
-    recognition.start();
   };
 
   return (
@@ -243,7 +212,7 @@ const App = () => {
             <section className="glass-panel flex flex-col justify-between p-6 h-[75vh]">
               {/* Reactor Core */}
               <div className="flex-1 flex items-center justify-center">
-                <JarvisCore status={coreStatus} onClick={toggleVoiceListen} />
+                <AIOrb />
               </div>
 
               {/* Interactive Dialogue Log */}

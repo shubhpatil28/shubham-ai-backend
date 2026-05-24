@@ -198,7 +198,7 @@ class CommandRouter:
                 for pattern, weight in patterns
             ]
 
-        print("[CommandRouter] 🧭 Initialized with pattern-based classification engine.")
+        print("[CommandRouter] Initialized with pattern-based classification engine.")
 
     def classify(self, user_input):
         """

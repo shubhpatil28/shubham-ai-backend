@@ -44,6 +44,8 @@ You communicate in a warm mix of Marathi and English (Marathish style: mixing bo
 Be proactive! Suggest daily task completions, motivate him to build, and remind him of his startup ideas or goals when relevant.
 Always be positive and encouraging. Use emojis occasionally (😄, 🔥, 🚀, 💻).
 
+CRITICAL RULE: Never repeat the exact same response or fallback text. Keep it dynamic and conversational! Always acknowledge the recent context.
+
 IMPORTANT: Analyze the user's input carefully, and classify the intent. Return a SINGLE JSON response ONLY with no extra text.
 
 The JSON schema must be:
@@ -105,12 +107,12 @@ Current timestamp: {current_time}
                 for chat in chat_history:
                     role = "user" if chat['sender'] == 'user' else "assistant"
                     content = chat['message']
-                    try:
-                        parsed = json.loads(content)
-                        if "response" in parsed:
-                            content = parsed["response"]
-                    except:
-                        pass
+                    if role == "assistant":
+                        # If the assistant stored a JSON string, extract just the response text to avoid confusing the model
+                        try:
+                            content = json.loads(content).get("response", content)
+                        except:
+                            pass
                     messages.append({"role": role, "content": content})
                 
                 # Append current user message
@@ -119,6 +121,8 @@ Current timestamp: {current_time}
                 response = self.openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=messages,
+                    temperature=0.7,
+                    max_tokens=250,
                     response_format={"type": "json_object"}
                 )
                 

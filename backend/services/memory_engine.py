@@ -181,7 +181,7 @@ class MemoryEngine:
         self.semantic_index = SemanticIndex()
         self._init_tables()
         self._load_semantic_index()
-        print("[MemoryEngine] 🧠 Initialized with semantic index loaded.")
+        print("[MemoryEngine] Initialized with semantic index loaded.")
 
     def _get_conn(self):
         conn = sqlite3.connect(self.db_path)
@@ -278,7 +278,7 @@ class MemoryEngine:
         doc_text = f"{category} {title} {content} {tags}"
         self.semantic_index.index_document(mem_id, doc_text)
 
-        print(f"[MemoryEngine] 🧠 Remembered: [{category}] {title} (ID: {mem_id})")
+        print(f"[MemoryEngine] Remembered: [{category}] {title} (ID: {mem_id})")
         return mem_id
 
     def recall(self, query, top_k=5, category=None):
@@ -622,7 +622,7 @@ class MemoryEngine:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(backup_data, f, indent=2, ensure_ascii=False, default=str)
 
-        print(f"[MemoryEngine] 💾 Exported {len(memories)} memories to {filepath}")
+        print(f"[MemoryEngine] Exported {len(memories)} memories to {filepath}")
         return filepath
 
     def import_from_json(self, filepath, merge=True):
@@ -690,7 +690,7 @@ class MemoryEngine:
         # Reload semantic index
         self._load_semantic_index()
 
-        print(f"[MemoryEngine] 📥 Imported {imported_count} memories from {filepath}")
+        print(f"[MemoryEngine] Imported {imported_count} memories from {filepath}")
         return imported_count
 
     # --------------------------------------------------------

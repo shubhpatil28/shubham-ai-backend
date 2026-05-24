@@ -26,7 +26,7 @@ def run_services():
     
     # 1. Start backend server
     print("[Launcher] Starting Flask API Backend...")
-    backend_env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    backend_env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUNBUFFERED="1")
     backend_cmd = [sys.executable, "backend/app.py"]
     backend_proc = subprocess.Popen(
         backend_cmd, 
@@ -34,7 +34,8 @@ def run_services():
         env=backend_env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        text=True,
+        encoding='utf-8',
+        errors='replace',
         bufsize=1
     )
     processes.append(backend_proc)
@@ -54,7 +55,8 @@ def run_services():
         cwd=frontend_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        text=True,
+        encoding='utf-8',
+        errors='replace',
         bufsize=1
     )
     processes.append(frontend_proc)
@@ -62,7 +64,8 @@ def run_services():
     # Function to print output from processes
     def stream_output(proc, prefix):
         for line in iter(proc.stdout.readline, ''):
-            print(f"{prefix}: {line.strip()}")
+            safe_line = line.strip().encode(sys.stdout.encoding, errors='replace').decode(sys.stdout.encoding)
+            print(f"{prefix}: {safe_line}")
             if not proc.poll() is None:
                 break
 
