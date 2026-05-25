@@ -5,17 +5,14 @@ import os
 
 app = Flask(__name__)
 
-# Enable CORS
 CORS(app)
 
-# Home Route
 @app.route("/")
 def home():
     return jsonify({
         "status": "SHUBHAM AI Backend Running 🚀"
     })
 
-# Chat Route
 @app.route("/chat", methods=["POST"])
 def chat():
 
@@ -23,11 +20,11 @@ def chat():
 
         data = request.get_json()
 
-        user_message = data["message"]
+        user_message = data.get("message", "")
 
-              API_KEY = os.environ.get("GEMINI_API_KEY")
+        API_KEY = os.environ.get("GEMINI_API_KEY")
 
-        URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={API_KEY}"
 
         payload = {
             "contents": [
@@ -41,10 +38,7 @@ def chat():
             ]
         }
 
-        response = requests.post(
-            URL,
-            json=payload
-        )
+        response = requests.post(url, json=payload)
 
         result = response.json()
 
@@ -61,6 +55,7 @@ def chat():
         else:
 
             ai_text = "No AI response received."
+
         return jsonify({
             "response": ai_text
         })
@@ -68,8 +63,9 @@ def chat():
     except Exception as e:
 
         return jsonify({
-            "response": f"Error: {str(e)}"
+            "response": str(e)
         })
+
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 5000))
