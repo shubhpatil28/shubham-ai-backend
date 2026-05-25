@@ -27,7 +27,7 @@ def chat():
 
         API_KEY = os.environ.get("GEMINI_API_KEY")
 
-        URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
+      URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={API_KEY}"
 
         payload = {
             "contents": [
@@ -50,16 +50,21 @@ def chat():
 
         print(result)
 
-        if "candidates" in result:
+        result = response.json()
 
-            ai_text = result["candidates"][0]["content"]["parts"][0]["text"]
+print(result)
 
-        else:
+if "candidates" in result:
 
-            ai_text = result.get("error", {}).get(
-                "message",
-                "Something went wrong"
-            )
+    ai_text = result["candidates"][0]["content"]["parts"][0]["text"]
+
+elif "error" in result:
+
+    ai_text = result["error"]["message"]
+
+else:
+
+    ai_text = "No AI response received."
 
         return jsonify({
             "response": ai_text
