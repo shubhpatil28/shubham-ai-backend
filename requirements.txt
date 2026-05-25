@@ -1,6 +1,4 @@
 flask
 flask-cors
-flask-socketio
-eventlet
 gunicorn
-openai
+google-generativeai==0.8.5
