@@ -1,4 +1,21 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import requests
+import os
+
+app = Flask(__name__)
+
+# Enable CORS
+CORS(app)
+
+# Home Route
+@app.route("/")
+def home():
+    return jsonify({
+        "status": "SHUBHAM AI Backend Running 🚀"
+    })
+
+# Chat Route
 @app.route("/chat", methods=["POST"])
 def chat():
 
@@ -8,7 +25,9 @@ def chat():
 
         user_message = data["message"]
 
-        URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={os.environ.get('GEMINI_API_KEY')}"
+        API_KEY = os.environ.get("GEMINI_API_KEY")
+
+        URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={API_KEY}"
 
         payload = {
             "contents": [
@@ -48,3 +67,12 @@ def chat():
         return jsonify({
             "response": f"Error: {str(e)}"
         })
+
+if __name__ == "__main__":
+
+    port = int(os.environ.get("PORT", 5000))
+
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )
