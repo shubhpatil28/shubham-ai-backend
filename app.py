@@ -19,15 +19,16 @@ def home():
 @app.route("/chat", methods=["POST"])
 def chat():
 
-  try:
+    try:
 
-    data = request.get_json()
+        data = request.get_json()
 
-    user_message = data["message"]
+        user_message = data["message"]
 
-    API_KEY = os.environ.get("GEMINI_API_KEY")
+        API_KEY = os.environ.get("GEMINI_API_KEY")
 
-    URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
+        URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
+
         payload = {
             "contents": [
                 {
@@ -55,7 +56,10 @@ def chat():
 
         else:
 
-            ai_text = str(result)
+            ai_text = result.get("error", {}).get(
+                "message",
+                "Something went wrong"
+            )
 
         return jsonify({
             "response": ai_text
@@ -66,7 +70,6 @@ def chat():
         return jsonify({
             "response": f"Error: {str(e)}"
         })
-
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 5000))
