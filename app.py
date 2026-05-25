@@ -14,7 +14,7 @@ genai.configure(
 )
 
 # Load Gemini Model
-model = genai.GenerativeModel("models/gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-pro")
 
 # Home Route
 @app.route("/")
