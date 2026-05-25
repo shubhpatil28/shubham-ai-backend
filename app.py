@@ -1,48 +1,52 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import google.generativeai as genai
+import requests
 import os
 
 app = Flask(__name__)
 
-# Enable CORS
 CORS(app)
 
-# Gemini API Setup
-genai.configure(
-    api_key=os.environ.get("GEMINI_API_KEY")
-)
+API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# Load Gemini Model
-model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash"
-)
+URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 
-# Home Route
 @app.route("/")
 def home():
     return jsonify({
-        "status": "SHUBHAM AI Backend Running 🚀"
+        "status": "Backend Running 🚀"
     })
 
-# Chat Route
 @app.route("/chat", methods=["POST"])
 def chat():
 
     try:
 
-        # Get frontend message
         data = request.get_json()
 
         user_message = data.get("message", "")
 
-        # Send to Gemini
-        response = model.generate_content(user_message)
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": user_message
+                        }
+                    ]
+                }
+            ]
+        }
 
-        # Extract AI response
-        ai_text = response.text
+        response = requests.post(
+            URL,
+            json=payload
+        )
 
-        # Return response
+        result = response.json()
+
+        ai_text = result["candidates"][0]["content"]["parts"][0]["text"]
+
         return jsonify({
             "response": ai_text
         })
@@ -53,7 +57,6 @@ def chat():
             "response": f"Error: {str(e)}"
         })
 
-# Run Server
 if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 5000))
