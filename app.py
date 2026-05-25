@@ -43,13 +43,26 @@ def chat():
             json=payload
         )
 
-        result = response.json()
+       response = requests.post(
+    URL,
+    json=payload
+)
 
-        ai_text = result["candidates"][0]["content"]["parts"][0]["text"]
+result = response.json()
 
-        return jsonify({
-            "response": ai_text
-        })
+print(result)
+
+if "candidates" in result:
+
+    ai_text = result["candidates"][0]["content"]["parts"][0]["text"]
+
+else:
+
+    ai_text = str(result)
+
+return jsonify({
+    "response": ai_text
+})
 
     except Exception as e:
 
