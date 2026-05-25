@@ -25,10 +25,9 @@ def chat():
 
         user_message = data["message"]
 
-        API_KEY = os.environ.get("GEMINI_API_KEY")
+      API_KEY = os.environ.get("GEMINI_API_KEY")
 
-       URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
-
+URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
         payload = {
             "contents": [
                 {
