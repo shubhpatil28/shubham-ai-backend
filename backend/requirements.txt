@@ -4,3 +4,7 @@ flask-socketio
 eventlet
 gunicorn
 openai
+PyPDF2
+Pillow
+flask_sqlalchemy
+marshmallow
