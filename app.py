@@ -1,11 +1,15 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import requests
+from groq import Groq
 import os
 
 app = Flask(__name__)
 
 CORS(app)
+
+client = Groq(
+    api_key=os.environ.get("GROQ_API_KEY")
+)
 
 @app.route("/")
 def home():
@@ -22,38 +26,17 @@ def chat():
 
         user_message = data["message"]
 
-        headers = {
-            "Authorization": f"Bearer {os.environ.get('OPENROUTER_API_KEY')}",
-            "Content-Type": "application/json"
-        }
-
-        payload = {
-    "model": "meta-llama/llama-3-8b-instruct:free",
-            "messages": [
+        completion = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[
                 {
                     "role": "user",
                     "content": user_message
                 }
             ]
-        }
-
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers,
-            json=payload
         )
 
-        result = response.json()
-
-        print(result)
-
-        if "choices" in result:
-
-            ai_text = result["choices"][0]["message"]["content"]
-
-        else:
-
-            ai_text = str(result)
+        ai_text = completion.choices[0].message.content
 
         return jsonify({
             "response": ai_text
