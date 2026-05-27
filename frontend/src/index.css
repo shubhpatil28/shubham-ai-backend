@@ -5,7 +5,7 @@
   --neon-blue: #0066ff;
   --neon-purple: #bd00ff;
   --bg-dark: #070913;
-  --bg-card: rgba(10, 15, 30, 0.7);
+  --bg-card: rgba(10, 15, 30, 0.6);
   --border-glow: rgba(0, 243, 255, 0.15);
   --text-primary: #e2e8f0;
   --text-secondary: #94a3b8;
@@ -18,7 +18,7 @@
   padding: 0;
   box-sizing: border-box;
   scrollbar-width: thin;
-  scrollbar-color: var(--neon-blue) rgba(10, 15, 30, 0.3);
+  scrollbar-color: var(--neon-cyan) rgba(10, 15, 30, 0.5);
 }
 
 /* Custom Scrollbars */
@@ -28,71 +28,79 @@
 }
 *::-webkit-scrollbar-track {
   background: rgba(10, 15, 30, 0.3);
+  border-radius: 4px;
 }
 *::-webkit-scrollbar-thumb {
-  background: var(--neon-blue);
-  border-radius: 3px;
-  border: 1px solid var(--bg-dark);
+  background: rgba(0, 243, 255, 0.4);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 243, 255, 0.1);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-cyan);
 }
 
 body {
   background-color: var(--bg-dark);
   background-image: 
-    linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+    radial-gradient(circle at top right, rgba(0, 243, 255, 0.05), transparent 400px),
+    radial-gradient(circle at bottom left, rgba(189, 0, 255, 0.05), transparent 400px),
+    linear-gradient(rgba(0, 243, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
   background-position: center;
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 /* Glassmorphism Panel */
 .glass-panel {
   background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-glow);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(0, 243, 255, 0.05);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 243, 255, 0.03);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-panel:hover {
-  border-color: rgba(0, 243, 255, 0.3);
-  box-shadow: 0 8px 32px 0 rgba(0, 243, 255, 0.1), inset 0 0 16px rgba(0, 243, 255, 0.08);
+  border-color: rgba(0, 243, 255, 0.4);
+  box-shadow: 0 8px 32px 0 rgba(0, 243, 255, 0.15), inset 0 0 20px rgba(0, 243, 255, 0.08);
 }
 
 /* Glowing text */
 .glow-text-cyan {
   color: var(--neon-cyan);
-  text-shadow: 0 0 10px rgba(0, 243, 255, 0.5), 0 0 20px rgba(0, 243, 255, 0.2);
+  text-shadow: 0 0 10px rgba(0, 243, 255, 0.6), 0 0 20px rgba(0, 243, 255, 0.3);
 }
 
 .glow-text-blue {
   color: var(--neon-blue);
-  text-shadow: 0 0 10px rgba(0, 102, 255, 0.5), 0 0 20px rgba(0, 102, 255, 0.2);
+  text-shadow: 0 0 10px rgba(0, 102, 255, 0.6), 0 0 20px rgba(0, 102, 255, 0.3);
 }
 
 /* Neon Button */
 .neon-button {
-  background: rgba(0, 102, 255, 0.1);
-  border: 1px solid var(--neon-blue);
+  background: rgba(0, 243, 255, 0.1);
+  border: 1px solid var(--neon-cyan);
   color: white;
   padding: 10px 20px;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   transition: all 0.3s ease;
-  box-shadow: 0 0 10px rgba(0, 102, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
 }
 
 .neon-button:hover {
-  background: var(--neon-blue);
-  box-shadow: 0 0 20px rgba(0, 102, 255, 0.6);
-  transform: translateY(-1px);
+  background: var(--neon-cyan);
+  color: var(--bg-dark);
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.8);
+  transform: translateY(-2px);
 }
 
 /* Core Animations */
@@ -108,13 +116,23 @@ body {
 
 @keyframes pulse-soft {
   0%, 100% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.05); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 1; }
 }
 
 @keyframes ripple-wave {
   0% { transform: scale(0.9); opacity: 0.8; }
   50% { opacity: 0.4; }
-  100% { transform: scale(1.4); opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes typing-dot {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes streaming-fade {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-spin-cw {
@@ -127,6 +145,10 @@ body {
 
 .animate-pulse-slow {
   animation: pulse-soft 3s ease-in-out infinite;
+}
+
+.animate-typing-dot {
+  animation: typing-dot 1s infinite;
 }
 
 /* Dashboard Grid Layout */
@@ -146,3 +168,94 @@ body {
     overflow-y: auto;
   }
 }
+
+/* Markdown Rendering Styles */
+.markdown-body {
+  font-family: inherit;
+  color: inherit;
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.6;
+}
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  line-height: 1.25;
+}
+
+.markdown-body p {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+.markdown-body a {
+  color: var(--neon-cyan);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.markdown-body a:hover {
+  color: var(--text-primary);
+  text-shadow: 0 0 8px rgba(0, 243, 255, 0.8);
+}
+
+.markdown-body strong {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.markdown-body ul, .markdown-body ol {
+  margin-top: 0;
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+
+.markdown-body li {
+  margin-bottom: 0.25em;
+}
+
+.markdown-body blockquote {
+  margin: 0 0 1em;
+  padding: 0.5em 1em;
+  color: var(--text-secondary);
+  border-left: 0.25em solid rgba(0, 243, 255, 0.4);
+  background: rgba(0, 243, 255, 0.05);
+  border-radius: 0 4px 4px 0;
+}
+
+.markdown-body pre {
+  margin-top: 0;
+  margin-bottom: 1em;
+  padding: 1rem;
+  overflow: auto;
+  font-size: 0.85em;
+  line-height: 1.45;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 243, 255, 0.15);
+  border-radius: 8px;
+}
+
+.markdown-body code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(0, 243, 255, 0.1);
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  color: var(--neon-cyan);
+}
+
+.markdown-body pre code {
+  padding: 0;
+  margin: 0;
+  font-size: 100%;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+  color: var(--text-primary);
+}
+
