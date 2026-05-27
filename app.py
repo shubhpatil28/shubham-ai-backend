@@ -26,15 +26,16 @@ def chat():
 
         user_message = data["message"]
 
-       completion = client.chat.completions.create(
-    model="llama-3.1-8b-instant",
-    messages=[
-        {
-            "role": "user",
-            "content": user_message
-        }
-    ]
-)
+        completion = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role": "user",
+                    "content": user_message
+                }
+            ]
+        )
+
         ai_text = completion.choices[0].message.content
 
         return jsonify({
