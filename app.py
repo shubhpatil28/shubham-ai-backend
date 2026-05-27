@@ -20,41 +20,40 @@ def chat():
 
         data = request.get_json()
 
-        user_message = data.get("message", "")
+        user_message = data["message"]
 
-        API_KEY = os.environ.get("GEMINI_API_KEY")
-
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={API_KEY}"
+        headers = {
+            "Authorization": f"Bearer {os.environ.get('OPENROUTER_API_KEY')}",
+            "Content-Type": "application/json"
+        }
 
         payload = {
-            "contents": [
+            "model": "deepseek/deepseek-chat-v3-0324:free",
+            "messages": [
                 {
-                    "parts": [
-                        {
-                            "text": user_message
-                        }
-                    ]
+                    "role": "user",
+                    "content": user_message
                 }
             ]
         }
 
-        response = requests.post(url, json=payload)
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload
+        )
 
         result = response.json()
 
         print(result)
 
-        if "candidates" in result:
+        if "choices" in result:
 
-            ai_text = result["candidates"][0]["content"]["parts"][0]["text"]
-
-        elif "error" in result:
-
-            ai_text = result["error"]["message"]
+            ai_text = result["choices"][0]["message"]["content"]
 
         else:
 
-            ai_text = "No AI response received."
+            ai_text = str(result)
 
         return jsonify({
             "response": ai_text
@@ -63,7 +62,7 @@ def chat():
     except Exception as e:
 
         return jsonify({
-            "response": str(e)
+            "response": f"Error: {str(e)}"
         })
 
 if __name__ == "__main__":
