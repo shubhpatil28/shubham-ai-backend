@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Send, MessageSquare, Brain, Sun, Moon, Radio, Calendar, Cpu, Sparkles, MessageCircle } from 'lucide-react';
+import { Send, MessageSquare, Brain, Sun, Moon, Radio, Calendar, Cpu, Sparkles, MessageCircle, Menu } from 'lucide-react';
 import JarvisCore from './components/JarvisCore';
 import StatusPanel from './components/StatusPanel';
 import Console from './components/Console';
@@ -9,6 +9,10 @@ import WhatsAppHub from './components/WhatsAppHub';
 import MemoryVault from './components/MemoryVault';
 import RouteIndicator from './components/RouteIndicator';
 import AIOrb from './components/AIOrb';
+import ChatSidebar from './components/ChatSidebar';
+import MessageBubble from './components/MessageBubble';
+import TypingIndicator from './components/TypingIndicator';
+import VoiceAssistant from './components/VoiceAssistant';
 import io from 'socket.io-client';
 
 const socket = io('http://localhost:5000');
@@ -21,6 +25,7 @@ const App = () => {
   const [logs, setLogs] = useState([]);
   const [memoriesCount, setMemoriesCount] = useState(0);
   const [isBrowserListening, setIsBrowserListening] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const chatEndRef = useRef(null);
 
   // Helper to add system diagnostic logs
@@ -145,16 +150,43 @@ const App = () => {
     }
   };
 
+  const handleNewChat = () => {
+    // In a real app with sessions, we'd create a new session ID here.
+    // For now, we'll just clear the local history.
+    setChatHistory([]);
+    addLog("New chat session initiated.", "system");
+  };
+
+  const handleDeleteChat = (id) => {
+    // Placeholder for deleting a chat session if backend supported it
+    addLog(`Deleted chat session ${id}`, "system");
+  };
+
   return (
-    <div className="min-h-screen text-slate-100 flex flex-col justify-between">
-      {/* HUD Header */}
-      <header className="border-b border-[#00f3ff]/10 bg-slate-950/40 backdrop-blur-md px-6 py-4 flex items-center justify-between z-20">
-        <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#00f3ff] animate-ping" />
-          <h1 className="text-sm font-mono font-extrabold tracking-[0.4em] text-white">
-            SHUBHAM AI <span className="text-[#00f3ff] font-light">OS_V3</span>
-          </h1>
-        </div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-row relative overflow-hidden">
+      <ChatSidebar 
+        chatHistory={chatHistory} 
+        onNewChat={handleNewChat}
+        onDeleteChat={handleDeleteChat}
+        isOpen={isSidebarOpen}
+        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+      />
+
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* HUD Header */}
+        <header className="border-b border-[#00f3ff]/10 bg-slate-950/40 backdrop-blur-md px-6 py-4 flex items-center justify-between z-20">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="md:hidden p-1.5 rounded-lg border border-[#00f3ff]/30 text-[#00f3ff] bg-[#00f3ff]/10 hover:bg-[#00f3ff]/20"
+            >
+              <Menu size={18} />
+            </button>
+            <div className="w-2.5 h-2.5 rounded-full bg-[#00f3ff] animate-ping" />
+            <h1 className="text-sm font-mono font-extrabold tracking-[0.4em] text-white">
+              SHUBHAM AI <span className="text-[#00f3ff] font-light">OS_V3</span>
+            </h1>
+          </div>
         
         {/* Navigation Tabs */}
         <div className="flex items-center gap-2 border border-slate-800 bg-slate-950/60 p-1 rounded-xl">
@@ -220,7 +252,7 @@ const App = () => {
                 <span className="text-[9px] font-mono text-slate-500 block mb-2 uppercase tracking-widest flex items-center gap-1">
                   <MessageSquare size={10} /> dialogue interface
                 </span>
-                <div className="flex-1 overflow-y-auto space-y-3.5 pr-1 mb-3">
+                <div className="flex-1 overflow-y-auto pr-1 mb-3 custom-scrollbar">
                   {chatHistory.length === 0 ? (
                     <div className="text-center text-slate-500 font-mono text-xs py-8">
                       INITIATE SYSTEM LOG OR GREET WAKE WORD "HEY BUDDY"
@@ -228,25 +260,18 @@ const App = () => {
                   ) : (
                     chatHistory.map((chat, index) => {
                       const isUser = chat.sender === 'user';
+                      const isNew = index === chatHistory.length - 1; // Only animate the very last message
                       return (
-                        <div 
-                          key={index} 
-                          className={`flex flex-col max-w-[85%] ${isUser ? 'ml-auto items-end' : 'mr-auto items-start'}`}
-                        >
-                          <span className="text-[8px] font-mono text-slate-500 uppercase mb-0.5">
-                            {isUser ? 'User' : 'Buddy'}
-                          </span>
-                          <div className={`p-2.5 rounded-lg text-xs leading-relaxed ${
-                            isUser 
-                              ? 'bg-slate-900 border border-slate-800 text-slate-300 rounded-tr-none' 
-                              : 'bg-[#00f3ff]/5 border border-[#00f3ff]/20 text-[#00f3ff] rounded-tl-none'
-                          }`}>
-                            {chat.cleanText}
-                          </div>
-                        </div>
+                        <MessageBubble 
+                          key={index}
+                          message={chat.cleanText}
+                          isUser={isUser}
+                          isNew={isNew}
+                        />
                       );
                     })
                   )}
+                  {coreStatus === 'processing' && <TypingIndicator />}
                   <div ref={chatEndRef} />
                 </div>
 
@@ -255,17 +280,10 @@ const App = () => {
 
                 {/* Input form */}
                 <form onSubmit={handleSendText} className="flex gap-2 items-center mt-1">
-                  <button 
-                    type="button"
-                    onClick={toggleVoiceListen}
-                    className={`p-2 rounded-lg border transition-all ${
-                      isBrowserListening 
-                        ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse' 
-                        : 'bg-[#bd00ff]/10 border-[#bd00ff]/30 text-[#bd00ff] hover:bg-[#bd00ff] hover:text-white'
-                    }`}
-                  >
-                    <Mic size={16} />
-                  </button>
+                  <VoiceAssistant 
+                    isListening={isBrowserListening} 
+                    onToggle={toggleVoiceListen} 
+                  />
                   <input 
                     type="text"
                     value={inputText}
@@ -306,6 +324,7 @@ const App = () => {
         </div>
         <span>BUDDY COMPANION V3.5</span>
       </footer>
+      </div>
     </div>
   );
 };
