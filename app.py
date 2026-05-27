@@ -27,15 +27,15 @@ def chat():
             "Content-Type": "application/json"
         }
 
-    payload = {
-    "model": "mistralai/mistral-7b-instruct:free",
-    "messages": [
-        {
-            "role": "user",
-            "content": user_message
+        payload = {
+            "model": "mistralai/mistral-7b-instruct:free",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": user_message
+                }
+            ]
         }
-    ]
-}
 
         response = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
