@@ -47,19 +47,7 @@ CORS(
     supports_credentials=True
 )
 
-# Global manual header injection for preflight stability
-@app.after_request
-def after_request(response):
-    origin = request.headers.get('Origin')
-    if origin in ["https://shubham-ai-os-fronted.vercel.app", "http://localhost:5173"]:
-        response.headers.add("Access-Control-Allow-Origin", origin)
-    
-    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
-    response.headers.add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
-    response.headers.add("Access-Control-Allow-Credentials", "true")
-    return response
-
-print("✅ Enterprise CORS & Preflight Stabilized")
+print("✅ CORS Header Duplication Issues Resolved")
 
 # ══════════════════════════════════════════════════════════════
 # 3. DATABASE & MODELS
