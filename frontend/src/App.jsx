@@ -13,6 +13,7 @@ import ChatSidebar from './components/ChatSidebar';
 import MessageBubble from './components/MessageBubble';
 import TypingIndicator from './components/TypingIndicator';
 import VoiceAssistant from './components/VoiceAssistant';
+import { motion, AnimatePresence } from 'framer-motion';
 import io from 'socket.io-client';
 
 const socket = io('http://localhost:5000');
@@ -163,7 +164,7 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-row relative overflow-hidden">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-row relative overflow-hidden crt-overlay">
       <ChatSidebar 
         chatHistory={chatHistory} 
         onNewChat={handleNewChat}
@@ -184,7 +185,7 @@ const App = () => {
             </button>
             <div className="w-2.5 h-2.5 rounded-full bg-[#00f3ff] animate-ping" />
             <h1 className="text-sm font-mono font-extrabold tracking-[0.4em] text-white">
-              SHUBHAM AI <span className="text-[#00f3ff] font-light">OS_V3</span>
+              SHUBHAM AI <span className="text-[#00f3ff] font-light animate-glitch cursor-default">OS_V3</span>
             </h1>
           </div>
         
@@ -232,8 +233,16 @@ const App = () => {
 
       {/* Main Workspace Area based on activeTab */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'core' && (
-          <main className="dashboard-grid h-full p-6 gap-6">
+        <AnimatePresence mode="wait">
+          {activeTab === 'core' && (
+            <motion.main 
+              key="core"
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 1.02, y: -10 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="dashboard-grid h-full p-6 gap-6"
+            >
             {/* Left Diagnostics Console */}
             <section className="flex flex-col gap-5 justify-between h-[75vh]">
               <StatusPanel memoriesCount={memoriesCount} />
@@ -305,12 +314,43 @@ const App = () => {
             <section className="flex flex-col gap-5 justify-between h-[75vh]">
               <Planner />
             </section>
-          </main>
+          </motion.main>
         )}
 
-        {activeTab === 'whatsapp' && <WhatsAppHub onLog={addLog} />}
-        {activeTab === 'memory' && <MemoryVault onLog={addLog} />}
-        {activeTab === 'builder' && <SiteBuilder onLog={addLog} />}
+        {activeTab === 'whatsapp' && (
+          <motion.div 
+            key="whatsapp"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="h-full"
+          >
+            <WhatsAppHub onLog={addLog} />
+          </motion.div>
+        )}
+        {activeTab === 'memory' && (
+          <motion.div 
+            key="memory"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="h-full"
+          >
+            <MemoryVault onLog={addLog} />
+          </motion.div>
+        )}
+        {activeTab === 'builder' && (
+          <motion.div 
+            key="builder"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="h-full"
+          >
+            <SiteBuilder onLog={addLog} />
+          </motion.div>
+        )}
+        </AnimatePresence>
       </div>
 
       {/* Memory Register footer */}
