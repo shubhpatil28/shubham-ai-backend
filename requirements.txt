@@ -1,5 +1,10 @@
 flask
 flask-cors
+flask-sqlalchemy
 gunicorn
 requests
 groq
+marshmallow
+PyPDF2
+Pillow
+python-dotenv

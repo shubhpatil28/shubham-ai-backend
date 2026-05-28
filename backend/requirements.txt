@@ -1,10 +1,10 @@
 flask
 flask-cors
-flask-socketio
-eventlet
+flask-sqlalchemy
 gunicorn
-openai
+requests
+groq
+marshmallow
 PyPDF2
 Pillow
-flask_sqlalchemy
-marshmallow
+python-dotenv

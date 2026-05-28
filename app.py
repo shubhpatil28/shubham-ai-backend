@@ -1,61 +1,45 @@
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
-from groq import Groq
-import os
-
-app = Flask(__name__)
-
-CORS(app)
-
-client = Groq(
-    api_key=os.environ.get("GROQ_API_KEY")
-)
-
-@app.route("/")
-def home():
-    return jsonify({
-        "status": "SHUBHAM AI Backend Running 🚀"
-    })
-
-@app.route("/chat", methods=["POST"])
-def chat():
-
-    try:
-
-        data = request.get_json()
-
-        user_message = data["message"]
-
-        completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {
-                    "role": "user",
-                    "content": user_message
-                }
-            ]
-        )
-
-        ai_text = completion.choices[0].message.content
-
-        return jsonify({
-            "response": ai_text
-        })
-
-    except Exception as e:
-
-        return jsonify({
-            "response": f"Error: {str(e)}"
-        })
-
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow import Schema, fields
+import os
 import datetime
+import logging
+import sys
+from groq import Groq
 
-# Initialize SQLAlchemy with SQLite database
-app.config['SQLALCHEMY_DATABASE_URI'] = os.path.join(os.getcwd(), 'memory.db')
+# ══════════════════════════════════════════════════════════════
+# 1. STARTUP LOGGING
+# ══════════════════════════════════════════════════════════════
+print("🚀 SHUBHAM AI OS Backend Starting...")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger("SHUBHAM-AI")
+
+app = Flask(__name__)
+CORS(app)
+
+print("✅ Flask App Loaded")
+
+# ══════════════════════════════════════════════════════════════
+# 2. CONFIGURATION & ENV VARS
+# ══════════════════════════════════════════════════════════════
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+SECRET_KEY = os.environ.get("SECRET_KEY", "jarvis_super_secret_dev_key")
+# Use a local sqlite file for memory if no DB URL is provided
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///shubham_ai.db")
+
+app.config['SECRET_KEY'] = SECRET_KEY
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# ══════════════════════════════════════════════════════════════
+# 3. DATABASE & MODELS
+# ══════════════════════════════════════════════════════════════
 db = SQLAlchemy(app)
 
 class Memory(db.Model):
@@ -76,19 +60,56 @@ class MemorySchema(Schema):
 memory_schema = MemorySchema()
 memories_schema = MemorySchema(many=True)
 
-# Ensure tables are created
+# ══════════════════════════════════════════════════════════════
+# 4. AI SERVICE INITIALIZATION
+# ══════════════════════════════════════════════════════════════
+try:
+    if not GROQ_API_KEY:
+        logger.warning("GROQ_API_KEY is missing. AI features will be limited.")
+    client = Groq(api_key=GROQ_API_KEY)
+    print("✅ AI Services Initialized")
+except Exception as e:
+    logger.error(f"AI Init Failed: {e}")
+    client = None
+
 with app.app_context():
     db.create_all()
 
+# ══════════════════════════════════════════════════════════════
+# 5. ROUTES
+# ══════════════════════════════════════════════════════════════
+
+@app.route("/")
+@app.route("/api/status")
+def status():
+    return jsonify({
+        "status": "online",
+        "system": "SHUBHAM AI OS",
+        "time": datetime.datetime.now().isoformat()
+    })
+
+@app.route("/api/chat", methods=["POST"])
+def chat():
+    if not client:
+        return jsonify({"response": "Groq client not initialized. Check API key."}), 503
+    
+    try:
+        data = request.get_json()
+        user_message = data.get("message", "")
+        
+        completion = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": user_message}]
+        )
+        return jsonify({"response": completion.choices[0].message.content})
+    except Exception as e:
+        logger.error(f"Chat error: {e}")
+        return jsonify({"response": f"I'm having trouble thinking... ({str(e)})"}), 500
+
 @app.route('/api/stream-chat', methods=['POST'])
 def stream_chat():
-    """SSE endpoint that streams Groq response token‑by‑token.
-    Expects JSON payload: {"message": "user prompt"}
-    """
     data = request.get_json()
     user_message = data.get('message')
-    if not user_message:
-        return jsonify({'error': 'No message provided'}), 400
 
     def generate():
         try:
@@ -98,61 +119,38 @@ def stream_chat():
                 stream=True
             )
             for chunk in completion:
-                # Each chunk may contain .choices[0].delta.content
                 delta = getattr(chunk.choices[0].delta, 'content', None)
                 if delta:
                     yield f"data: {delta}\n\n"
         except Exception as e:
             yield f"event: error\ndata: {str(e)}\n\n"
+
     return Response(generate(), mimetype='text/event-stream')
 
 @app.route('/api/memory', methods=['GET'])
 def get_memories():
-    # Optional query params: category, search
-    category = request.args.get('category')
-    search = request.args.get('q')
-    query = Memory.query
-    if category:
-        query = query.filter(Memory.category == category)
-    if search:
-        pattern = f"%{search}%"
-        query = query.filter(Memory.title.ilike(pattern) | Memory.content.ilike(pattern))
-    memories = query.order_by(Memory.timestamp.desc()).all()
-    return jsonify(memories_schema.dump(memories))
+    mems = Memory.query.order_by(Memory.timestamp.desc()).all()
+    return jsonify(memories_schema.dump(mems))
 
 @app.route('/api/memory', methods=['POST'])
-def create_memory():
+def add_memory():
     data = request.get_json()
-    title = data.get('title')
-    content = data.get('content')
-    category = data.get('category')
-    if not all([title, content, category]):
-        return jsonify({'error': 'Missing fields'}), 400
-    mem = Memory(title=title, content=content, category=category)
-    db.session.add(mem)
+    new_mem = Memory(
+        title=data.get('title'),
+        content=data.get('content'),
+        category=data.get('category', 'note')
+    )
+    db.session.add(new_mem)
     db.session.commit()
-    return jsonify(memory_schema.dump(mem)), 201
+    return jsonify(memory_schema.dump(new_mem))
 
-@app.route('/api/memory/<int:mem_id>', methods=['PUT'])
-def update_memory(mem_id):
-    mem = Memory.query.get_or_404(mem_id)
-    data = request.get_json()
-    mem.title = data.get('title', mem.title)
-    mem.content = data.get('content', mem.content)
-    mem.category = data.get('category', mem.category)
-    db.session.commit()
-    return jsonify(memory_schema.dump(mem))
-
-@app.route('/api/memory/<int:mem_id>', methods=['DELETE'])
-def delete_memory(mem_id):
-    mem = Memory.query.get_or_404(mem_id)
+@app.route('/api/memory/<int:id>', methods=['DELETE'])
+def delete_memory(id):
+    mem = Memory.query.get_or_404(id)
     db.session.delete(mem)
     db.session.commit()
-    return jsonify({'message': 'Deleted'}), 200
+    return jsonify({"message": "Memory deleted"})
 
+if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-
-    app.run(
-        host="0.0.0.0",
-        port=port
-    )
+    app.run(host="0.0.0.0", port=port)
