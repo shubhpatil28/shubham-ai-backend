@@ -23,7 +23,7 @@ logger = logging.getLogger("SHUBHAM-AI")
 app = Flask(__name__)
 
 # ══════════════════════════════════════════════════════════════
-# 2. CONFIGURATION & CORS
+# 2. CONFIGURATION & CORS (ENTERPRISE STABILIZATION)
 # ══════════════════════════════════════════════════════════════
 SECRET_KEY = os.environ.get("SECRET_KEY", "jarvis_super_secret_dev_key")
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///shubham_ai.db")
@@ -33,21 +33,33 @@ app.config['SECRET_KEY'] = SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Primary CORS Configuration
 CORS(
     app,
     resources={
         r"/*": {
             "origins": [
                 "https://shubham-ai-os-fronted.vercel.app",
-                "http://localhost:5173",
-                "https://shubham-ai-os-fronted-shubhpatil28s-projects.vercel.app"
+                "http://localhost:5173"
             ]
         }
     },
     supports_credentials=True
 )
 
-print("✅ Flask App & CORS Configured")
+# Global manual header injection for preflight stability
+@app.after_request
+def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin in ["https://shubham-ai-os-fronted.vercel.app", "http://localhost:5173"]:
+        response.headers.add("Access-Control-Allow-Origin", origin)
+    
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+    response.headers.add("Access-Control-Allow-Credentials", "true")
+    return response
+
+print("✅ Enterprise CORS & Preflight Stabilized")
 
 # ══════════════════════════════════════════════════════════════
 # 3. DATABASE & MODELS
@@ -88,7 +100,7 @@ with app.app_context():
     db.create_all()
 
 # ══════════════════════════════════════════════════════════════
-# 5. ROUTES
+# 5. ROUTES (WITH EXPLICIT OPTIONS SUPPORT)
 # ══════════════════════════════════════════════════════════════
 
 @app.route("/")
@@ -97,12 +109,15 @@ def status():
     return jsonify({
         "status": "online",
         "system": "SHUBHAM AI OS",
-        "version": "1.0.0",
+        "version": "1.1.0-STABLE",
         "time": datetime.datetime.now().isoformat()
     })
 
-@app.route("/api/chat", methods=["POST"])
+@app.route("/api/chat", methods=["POST", "OPTIONS"])
 def chat():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+
     if not client:
         return jsonify({"response": "Groq client not initialized. Check API key."}), 503
     try:
@@ -117,8 +132,11 @@ def chat():
         logger.error(f"Chat error: {e}")
         return jsonify({"response": f"Neural link destabilized: {str(e)}"}), 500
 
-@app.route('/api/stream-chat', methods=['POST'])
+@app.route('/api/stream-chat', methods=['POST', 'OPTIONS'])
 def stream_chat():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+
     data = request.get_json()
     user_message = data.get('message')
     def generate():
@@ -136,33 +154,42 @@ def stream_chat():
             yield f"event: error\ndata: {str(e)}\n\n"
     return Response(generate(), mimetype='text/event-stream')
 
-@app.route('/api/memory', methods=['GET'])
-def get_memories():
-    mems = Memory.query.order_by(Memory.timestamp.desc()).all()
-    return jsonify(memories_schema.dump(mems))
+@app.route('/api/memory', methods=['GET', 'POST', 'OPTIONS'])
+def manage_memory():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
 
-@app.route('/api/memory', methods=['POST'])
-def add_memory():
-    data = request.get_json()
-    new_mem = Memory(
-        title=data.get('title'),
-        content=data.get('content'),
-        category=data.get('category', 'note')
-    )
-    db.session.add(new_mem)
-    db.session.commit()
-    return jsonify(memory_schema.dump(new_mem))
+    if request.method == 'GET':
+        mems = Memory.query.order_by(Memory.timestamp.desc()).all()
+        return jsonify(memories_schema.dump(mems))
+    
+    if request.method == 'POST':
+        data = request.get_json()
+        new_mem = Memory(
+            title=data.get('title'),
+            content=data.get('content'),
+            category=data.get('category', 'note')
+        )
+        db.session.add(new_mem)
+        db.session.commit()
+        return jsonify(memory_schema.dump(new_mem))
 
-@app.route('/api/analyze-pdf', methods=['POST'])
+@app.route('/api/analyze-pdf', methods=['POST', 'OPTIONS'])
 def analyze_pdf():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
     return jsonify({"response": "PDF Analysis module online. Awaiting document stream."})
 
-@app.route('/api/analyze-image', methods=['POST'])
+@app.route('/api/analyze-image', methods=['POST', 'OPTIONS'])
 def analyze_image():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
     return jsonify({"response": "Visual Cortex online. Image analysis processing active."})
 
-@app.route('/api/upload', methods=['POST'])
+@app.route('/api/upload', methods=['POST', 'OPTIONS'])
 def upload_file():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
     return jsonify({"success": True, "message": "Teleportation bridge active. File received."})
 
 if __name__ == "__main__":

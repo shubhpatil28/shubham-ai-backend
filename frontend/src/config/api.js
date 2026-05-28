@@ -20,6 +20,11 @@ export async function safeFetch(path, options = {}, timeoutMs = DEFAULT_TIMEOUT_
   try {
     const res = await fetch(`${API_URL}${path}`, {
       ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+      credentials: 'include',
       signal: controller.signal,
     });
     clearTimeout(timer);
