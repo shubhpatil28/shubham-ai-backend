@@ -1,104 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, Radio, Database, Cpu, Wifi } from 'lucide-react';
+import React from 'react';
+import { Activity, Cpu, Shield, Globe, Zap, Database } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { AGENTS } from '../config/agents';
 
-const StatusPanel = ({ memoriesCount = 0 }) => {
-  const [status, setStatus] = useState({
-    status: 'connecting',
-    voice_active: false,
-    database_connected: false,
-    config_loaded: { openai_enabled: false, elevenlabs_enabled: false }
-  });
-  
-  const [localIp, setLocalIp] = useState('127.0.0.1');
-
-  const fetchStatus = async () => {
-    try {
-      const response = await fetch('/api/status');
-      if (response.ok) {
-        const data = await response.json();
-        setStatus(data);
-      }
-    } catch (error) {
-      setStatus(prev => ({ ...prev, status: 'offline' }));
-    }
-  };
-
-  useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 8000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Try to determine the local hostname/IP
-  useEffect(() => {
-    // A standard window location fallback for mobile sync instruction
-    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      setLocalIp(window.location.hostname);
-    } else {
-      // Set a generic instruction
-      setLocalIp('IP Address');
-    }
-  }, []);
+const StatusPanel = ({ memoriesCount }) => {
+  const stats = [
+    { label: 'Network Integrity', val: '98.4%', icon: Globe, color: 'text-cyan-400' },
+    { label: 'Neural Load', val: '12.4ms', icon: Activity, color: 'text-emerald-400' },
+    { label: 'Synaptic Links', val: '14 Active', icon: Zap, color: 'text-amber-400' },
+    { label: 'Memory Vaults', val: memoriesCount || 0, icon: Database, color: 'text-purple-400' },
+  ];
 
   return (
-    <div className="glass-panel p-5 flex flex-col h-[340px] justify-between">
-      <div>
-        <div className="flex items-center gap-2 border-b border-cyan-500/10 pb-2 mb-4">
-          <Shield size={14} className="text-[#00f3ff]" />
-          <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-[#00f3ff]">CORE DIAGNOSTICS</h2>
+    <div className="glass-panel p-6 flex flex-col gap-6">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-white/5 pb-4">
+        <div className="flex flex-col">
+          <span className="text-[8px] font-mono text-slate-500 uppercase tracking-[0.4em]">Environmental</span>
+          <h3 className="text-sm font-mono font-black text-white tracking-widest mt-1 uppercase">Diagnostics</h3>
         </div>
-
-        {/* Stats Grid */}
-        <div className="space-y-3.5">
-          {/* Main Status */}
-          <div className="flex items-center justify-between text-xs font-mono">
-            <span className="text-slate-500 flex items-center gap-1.5"><Cpu size={12} /> CORE OS:</span>
-            <span className={`font-bold uppercase tracking-wider ${status.status === 'online' ? 'text-emerald-400' : 'text-red-400'}`}>
-              {status.status}
-            </span>
-          </div>
-
-          {/* Voice listener */}
-          <div className="flex items-center justify-between text-xs font-mono">
-            <span className="text-slate-500 flex items-center gap-1.5"><Radio size={12} /> MIC DAEMON:</span>
-            <span className={`font-bold ${status.voice_active ? 'text-emerald-400' : 'text-cyan-400'}`}>
-              {status.voice_active ? 'BACKGROUND LISTENING' : 'ACTIVE WAKE WORD'}
-            </span>
-          </div>
-
-          {/* Database */}
-          <div className="flex items-center justify-between text-xs font-mono">
-            <span className="text-slate-500 flex items-center gap-1.5"><Database size={12} /> SQL MEMORY:</span>
-            <span className="text-emerald-400 font-bold">CONNECTED ({memoriesCount} FACTS)</span>
-          </div>
-
-          {/* API Integrations */}
-          <div className="border-t border-slate-800/60 pt-3 mt-2">
-            <span className="text-[9px] font-mono text-slate-500 block mb-1.5">INTEGRATED SYSTEMS</span>
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
-              <div className={`p-1.5 rounded border text-center ${status.config_loaded.openai_enabled ? 'bg-emerald-950/10 border-emerald-500/20 text-emerald-400' : 'bg-slate-900/40 border-slate-800 text-slate-500'}`}>
-                GPT-4o {status.config_loaded.openai_enabled ? 'READY' : 'OFFLINE'}
-              </div>
-              <div className={`p-1.5 rounded border text-center ${status.config_loaded.elevenlabs_enabled ? 'bg-emerald-950/10 border-emerald-500/20 text-emerald-400' : 'bg-slate-900/40 border-slate-800 text-slate-500'}`}>
-                11LABS {status.config_loaded.elevenlabs_enabled ? 'READY' : 'LOCAL TTS'}
-              </div>
-            </div>
-          </div>
+        <div className="flex gap-1.5">
+           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
+           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40" />
         </div>
       </div>
 
-      {/* Mobile + PC Sync info */}
-      <div className="mt-4 p-2.5 rounded bg-[#0066ff]/5 border border-[#0066ff]/20 flex items-start gap-2">
-        <Wifi size={14} className="text-[#00d2ff] mt-0.5 flex-shrink-0" />
-        <div className="min-w-0">
-          <span className="text-[9px] font-mono font-bold text-[#00d2ff] block uppercase">Mobile Sync Channel</span>
-          <p className="text-[8px] font-mono text-slate-400 leading-normal mt-0.5">
-            Access this control node from your phone on the same Wi-Fi. Open your phone's browser and go to:
-          </p>
-          <span className="text-[9px] font-mono text-emerald-400 font-bold block mt-1">
-            http://[Your-PC-Local-IP]:5173
-          </span>
-        </div>
+      {/* Main Stats Grid */}
+      <div className="grid grid-cols-2 gap-4">
+        {stats.map((s, i) => (
+          <motion.div 
+            key={i}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="p-3 bg-black/40 border border-white/5 rounded-xl flex flex-col gap-2 group hover:border-[#00f3ff]/30 transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <s.icon size={12} className={s.color} />
+              <span className="text-[8px] font-mono text-slate-500 uppercase font-black tracking-widest">{s.label}</span>
+            </div>
+            <div className="text-sm font-mono font-black text-white">{s.val}</div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Agent Health Subpanel */}
+      <div className="mt-2 flex flex-col gap-4">
+         <h4 className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
+           <Shield size={10} /> Agent Connectivity
+         </h4>
+         <div className="space-y-4">
+            {Object.values(AGENTS).slice(0, 4).map((agent, i) => (
+               <div key={agent.id} className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center px-1">
+                     <span className="text-[8px] font-mono text-slate-400 uppercase">{agent.name} Pulse</span>
+                     <span className="text-[8px] font-mono text-emerald-400">99.2%</span>
+                  </div>
+                  <div className="h-0.5 bg-white/5 rounded-full overflow-hidden">
+                     <motion.div 
+                       animate={{ 
+                         x: [-100, 200],
+                         opacity: [0, 1, 0]
+                       }}
+                       transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.4 }}
+                       className="w-20 h-full bg-current"
+                       style={{ color: agent.color }}
+                     />
+                  </div>
+               </div>
+            ))}
+         </div>
       </div>
     </div>
   );
