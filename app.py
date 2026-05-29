@@ -142,15 +142,22 @@ def stream_chat():
             yield f"event: error\ndata: {str(e)}\n\n"
     return Response(generate(), mimetype='text/event-stream')
 
+@app.route('/api/chat-history', methods=['GET', 'OPTIONS'])
+def chat_history():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+    # Returns last 50 memories as a simulated chat history for the UI
+    mems = Memory.query.order_by(Memory.timestamp.desc()).limit(50).all()
+    history = [{"sender": "user" if i%2==0 else "nexus", "message": m.content, "timestamp": m.timestamp} for i, m in enumerate(mems)]
+    return jsonify(history)
+
 @app.route('/api/memory', methods=['GET', 'POST', 'OPTIONS'])
 def manage_memory():
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
-
     if request.method == 'GET':
         mems = Memory.query.order_by(Memory.timestamp.desc()).all()
         return jsonify(memories_schema.dump(mems))
-    
     if request.method == 'POST':
         data = request.get_json()
         new_mem = Memory(
@@ -161,6 +168,22 @@ def manage_memory():
         db.session.add(new_mem)
         db.session.commit()
         return jsonify(memory_schema.dump(new_mem))
+
+@app.route('/api/memory/<int:id>', methods=['DELETE', 'OPTIONS'])
+def delete_memory(id):
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+    mem = Memory.query.get_or_404(id)
+    db.session.delete(mem)
+    db.session.commit()
+    return jsonify({"message": "Memory deleted"})
+
+@app.route('/api/planner', methods=['GET', 'POST', 'OPTIONS'])
+@app.route('/api/planner/<int:id>', methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+def manage_planner(id=None):
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+    return jsonify({"status": "success", "message": "Mission planning module active.", "id": id})
 
 @app.route('/api/analyze-pdf', methods=['POST', 'OPTIONS'])
 def analyze_pdf():
