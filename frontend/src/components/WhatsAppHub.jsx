@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Send, Calendar, Users, Shield, MessageSquare, Trash2, Plus, RefreshCw, Upload, FileText } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const WhatsAppHub = ({ onLog }) => {
   const [status, setStatus] = useState('offline');
@@ -26,7 +27,7 @@ const WhatsAppHub = ({ onLog }) => {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch('/api/whatsapp/status');
+      const res = await fetch(`${API_URL}/api/whatsapp/status`);
       if (res.ok) {
         const data = await res.json();
         setStatus(data.driver_status);
@@ -38,7 +39,7 @@ const WhatsAppHub = ({ onLog }) => {
 
   const fetchContacts = async () => {
     try {
-      const res = await fetch('/api/whatsapp/contacts');
+      const res = await fetch(`${API_URL}/api/whatsapp/contacts`);
       if (res.ok) {
         const data = await res.json();
         setContacts(data);
@@ -50,7 +51,7 @@ const WhatsAppHub = ({ onLog }) => {
 
   const fetchSchedules = async () => {
     try {
-      const res = await fetch('/api/whatsapp/schedule');
+      const res = await fetch(`${API_URL}/api/whatsapp/schedule`);
       if (res.ok) {
         const data = await res.json();
         setSchedules(data);
@@ -72,7 +73,7 @@ const WhatsAppHub = ({ onLog }) => {
     setLoading(true);
     if (onLog) onLog("Launching WhatsApp Web persistent driver...", "action");
     try {
-      const res = await fetch('/api/whatsapp/open', { method: 'POST' });
+      const res = await fetch(`${API_URL}/api/whatsapp/open`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         if (onLog) onLog(data.message, "response");
@@ -89,7 +90,7 @@ const WhatsAppHub = ({ onLog }) => {
     e.preventDefault();
     if (!newNickname || !newContactName) return;
     try {
-      const res = await fetch('/api/whatsapp/contacts', {
+      const res = await fetch(`${API_URL}/api/whatsapp/contacts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nickname: newNickname, contact_name: newContactName })
@@ -107,7 +108,7 @@ const WhatsAppHub = ({ onLog }) => {
 
   const handleDeleteContact = async (id) => {
     try {
-      const res = await fetch(`/api/whatsapp/contacts/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/api/whatsapp/contacts/${id}`, { method: 'DELETE' });
       if (res.ok) {
         fetchContacts();
         if (onLog) onLog("Contact mapping deleted.", "system");
@@ -121,7 +122,7 @@ const WhatsAppHub = ({ onLog }) => {
     e.preventDefault();
     if (!targetContact || !directMsg) return;
     try {
-      const res = await fetch('/api/whatsapp/send', {
+      const res = await fetch(`${API_URL}/api/whatsapp/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipient: targetContact, message: directMsg })
@@ -144,7 +145,7 @@ const WhatsAppHub = ({ onLog }) => {
     const formattedTime = schedTime.replace('T', ' ') + ':00';
 
     try {
-      const res = await fetch('/api/whatsapp/schedule', {
+      const res = await fetch(`${API_URL}/api/whatsapp/schedule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -169,7 +170,7 @@ const WhatsAppHub = ({ onLog }) => {
 
   const handleDeleteSchedule = async (id) => {
     try {
-      const res = await fetch(`/api/whatsapp/schedule/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/api/whatsapp/schedule/${id}`, { method: 'DELETE' });
       if (res.ok) {
         fetchSchedules();
         if (onLog) onLog("Scheduled message cancelled.", "system");
@@ -183,7 +184,7 @@ const WhatsAppHub = ({ onLog }) => {
     e.preventDefault();
     if (!statusFilePath) return;
     try {
-      const res = await fetch('/api/whatsapp/upload-status', {
+      const res = await fetch(`${API_URL}/api/whatsapp/upload-status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ file_path: statusFilePath })

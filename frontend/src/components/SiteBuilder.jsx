@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Cpu, ExternalLink, Sparkles, Download, Globe, CheckCircle2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 const SiteBuilder = ({ onLog }) => {
   const [siteName, setSiteName] = useState('');
@@ -23,7 +24,7 @@ const SiteBuilder = ({ onLog }) => {
     }
 
     try {
-      const response = await fetch('/api/site-gen', {
+      const response = await fetch(`${API_URL}/api/site-gen`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -53,7 +54,7 @@ const SiteBuilder = ({ onLog }) => {
 
   const handleExportZip = () => {
     if (!result) return;
-    window.open(`/api/site-gen/export?site_name=${result.site_name}`, '_blank');
+    window.open(`${API_URL}/api/site-gen/export?site_name=${result.site_name}`, '_blank');
     if (onLog) onLog(`Exporting Vite package: ${result.site_name}.zip`, "system");
   };
 
@@ -63,7 +64,7 @@ const SiteBuilder = ({ onLog }) => {
     if (onLog) onLog(`Deploying ${result.site_name} to Google Cloud production nodes...`, "action");
 
     try {
-      const response = await fetch('/api/site-gen/deploy', {
+      const response = await fetch(`${API_URL}/api/site-gen/deploy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ site_name: result.site_name })

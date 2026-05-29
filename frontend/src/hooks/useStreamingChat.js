@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { API_URL } from '../config/api';
 
 /**
  * useStreamingChat – custom hook to stream AI responses from the backend.
@@ -21,7 +22,7 @@ export default function useStreamingChat() {
     }
     controllerRef.current = new AbortController();
     try {
-      const response = await fetch('/api/stream-chat', {
+      const response = await fetch(`${API_URL}/api/stream-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
