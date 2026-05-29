@@ -79,6 +79,17 @@ export const AGENTS = {
     personality: 'Empathetic, fluid, expressive',
     status: 'idle',
   },
+  TERMINUS: {
+    id: 'terminus',
+    name: 'Terminus',
+    role: 'OS Engine',
+    description: 'Hardware orchestrator and desktop control engine.',
+    color: '#34d399',
+    icon: Terminal,
+    animation: 'ping',
+    personality: 'Functional, commanding, direct',
+    status: 'idle',
+  },
 };
 
 export const TASK_STAGES = [

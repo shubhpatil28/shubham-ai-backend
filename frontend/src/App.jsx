@@ -31,6 +31,7 @@ const Planner     = lazy(() => import('./components/Planner').catch(() => ({ def
 const WhatsAppHub = lazy(() => import('./components/WhatsAppHub').catch(() => ({ default: () => <FallbackCard name="WhatsApp Hub" /> })));
 const MemoryVault = lazy(() => import('./components/MemoryVault').catch(() => ({ default: () => <FallbackCard name="Memory Vault" /> })));
 const DataHub     = lazy(() => import('./components/DataHub').catch(() => ({ default: () => <FallbackCard name="Data Hub" /> })));
+const SystemControl = lazy(() => import('./components/SystemControl').catch(() => ({ default: () => <FallbackCard name="System Control" /> })));
 
 // ── Safe WebSocket init ──────────────────────────────────────
 let socket = null;
@@ -138,6 +139,7 @@ const App = () => {
     if (type.includes('site') || type.includes('code')) targetAgent = 'forge';
     else if (type.includes('memory') || type.includes('forget')) targetAgent = 'echo';
     else if (type.includes('data') || type.includes('research')) targetAgent = 'oracle';
+    else if (type.includes('system') || type.includes('os')) targetAgent = 'terminus';
 
     addLog(`Task Routed to Agent ${targetAgent.toUpperCase()}`, 'system');
     for (const stage of stages) {
@@ -157,6 +159,19 @@ const App = () => {
 
   const processInput = async (messageText) => {
     if (!messageText?.trim()) return;
+    const lowerText = messageText.toLowerCase();
+
+    // Command Interception Layer
+    const systemTriggers = ['open chrome', 'open vscode', 'open whatsapp', 'open downloads', 'open documents', 'create folder', 'shutdown', 'restart'];
+    const matchedTrigger = systemTriggers.find(t => lowerText.includes(t));
+
+    if (matchedTrigger) {
+      setActiveTab('system');
+      setActiveAgentId('terminus');
+      addLog(`System Directive Intercepted: ${matchedTrigger.toUpperCase()}`, 'action');
+      return; 
+    }
+
     setCoreState('processing');
     addLog(`Direct Link Command: "${messageText}"`, 'action');
     const { data, error } = await safeFetch('/api/chat', {
@@ -280,23 +295,24 @@ const App = () => {
                 </div>
 
                 <div className="hidden xl:flex items-center gap-1.5 p-1.5 bg-black/40 rounded-xl border border-white/5">
-                  {[
-                    { id: 'core',     icon: <Cpu size={14} />,            label: 'Network' },
-                    { id: 'whatsapp', icon: <MessageCircle size={14} />,  label: 'Nexus' },
-                    { id: 'memory',   icon: <Brain size={14} />,           label: 'Vault' },
-                    { id: 'data',     icon: <TrendingUp size={14} />,     label: 'Oracle' },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-[10px] font-mono font-black uppercase tracking-[0.2em] transition-all ${
-                        activeTab === tab.id ? 'bg-[#00f3ff] text-black shadow-[0_0_30px_rgba(0,243,255,0.4)]' : 'text-slate-500 hover:text-white'
-                      }`}
-                    >
-                      {tab.icon}
-                      <span className="hidden lg:inline">{tab.label}</span>
-                    </button>
-                  ))}
+                    {[
+                      { id: 'core',     icon: <Cpu size={14} />,            label: 'Network' },
+                      { id: 'whatsapp', icon: <MessageCircle size={14} />,  label: 'Nexus' },
+                      { id: 'system',   icon: <Terminal size={14} />,        label: 'Terminus' },
+                      { id: 'memory',   icon: <Brain size={14} />,           label: 'Vault' },
+                      { id: 'data',     icon: <TrendingUp size={14} />,     label: 'Oracle' },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-[10px] font-mono font-black uppercase tracking-[0.2em] transition-all ${
+                          activeTab === tab.id ? 'bg-[#00f3ff] text-black shadow-[0_0_30px_rgba(0,243,255,0.4)]' : 'text-slate-500 hover:text-white'
+                        }`}
+                      >
+                        {tab.icon}
+                        <span className="hidden lg:inline">{tab.label}</span>
+                      </button>
+                    ))}
                 </div>
               </header>
 
@@ -390,9 +406,10 @@ const App = () => {
 
                   {activeTab !== 'core' && (
                     <motion.div key={activeTab} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="h-full pb-20">
-                       {activeTab === 'whatsapp' && <TabModule name="WhatsApp Hub"><WhatsAppHub onLog={addLog} /></TabModule>}
-                       {activeTab === 'memory' && <TabModule name="Memory Vault"><MemoryVault onLog={addLog} /></TabModule>}
-                       {activeTab === 'data' && <TabModule name="Data Hub"><DataHub onLog={addLog} /></TabModule>}
+                        {activeTab === 'whatsapp' && <TabModule name="WhatsApp Hub"><WhatsAppHub onLog={addLog} /></TabModule>}
+                        {activeTab === 'system' && <TabModule name="System Control"><SystemControl onLog={addLog} /></TabModule>}
+                        {activeTab === 'memory' && <TabModule name="Memory Vault"><MemoryVault onLog={addLog} /></TabModule>}
+                        {activeTab === 'data' && <TabModule name="Data Hub"><DataHub onLog={addLog} /></TabModule>}
                     </motion.div>
                   )}
                 </AnimatePresence>

@@ -6,6 +6,8 @@ import os
 import datetime
 import logging
 import sys
+import subprocess
+from pathlib import Path
 from groq import Groq
 
 # ══════════════════════════════════════════════════════════════
@@ -196,6 +198,68 @@ def analyze_image():
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
     return jsonify({"response": "Visual Cortex online. Image analysis processing active."})
+
+@app.route('/api/system-command', methods=['POST', 'OPTIONS'])
+def system_command():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+        
+    data = request.get_json()
+    command = data.get('command', '').lower()
+    confirmed = data.get('confirmed', False)
+    
+    try:
+        # ── Application Launchers ──
+        if "open chrome" in command:
+            subprocess.Popen(["start", "chrome"], shell=True)
+            return jsonify({"status": "success", "message": "Launching Google Chrome..."})
+            
+        elif "open vscode" in command:
+            subprocess.Popen(["code"], shell=True)
+            return jsonify({"status": "success", "message": "Launching Visual Studio Code..."})
+
+        elif "open whatsapp" in command:
+            subprocess.Popen(["start", "whatsapp://"], shell=True)
+            return jsonify({"status": "success", "message": "Launching WhatsApp..."})
+
+        # ── System Directories ──
+        elif "open downloads" in command:
+            path = str(Path.home() / "Downloads")
+            subprocess.Popen(["explorer", path])
+            return jsonify({"status": "success", "message": "Opening Downloads folder."})
+            
+        elif "open documents" in command:
+            path = str(Path.home() / "Documents")
+            subprocess.Popen(["explorer", path])
+            return jsonify({"status": "success", "message": "Opening Documents folder."})
+
+        # ── Utilities ──
+        elif "create folder" in command:
+            folder_name = command.replace("create folder", "").strip()
+            if not folder_name:
+                return jsonify({"status": "failed", "message": "No folder name provided."})
+            path = Path.home() / "Desktop" / folder_name
+            os.makedirs(path, exist_ok=True)
+            return jsonify({"status": "success", "message": f"Folder '{folder_name}' created on Desktop."})
+
+        # ── Dangerous Actions (Require Confirmation) ──
+        elif "shutdown" in command:
+            if not confirmed:
+                return jsonify({"status": "pending", "message": "Shutdown request detected. Please confirm."})
+            subprocess.Popen(["shutdown", "/s", "/t", "1"])
+            return jsonify({"status": "success", "message": "System shutdown initiated."})
+
+        elif "restart" in command:
+            if not confirmed:
+                return jsonify({"status": "pending", "message": "Restart request detected. Please confirm."})
+            subprocess.Popen(["shutdown", "/r", "/t", "1"])
+            return jsonify({"status": "success", "message": "System restart initiated."})
+
+        return jsonify({"status": "failed", "message": f"Command '{command}' not recognized by System Core."})
+
+    except Exception as e:
+        logger.error(f"System Command Error: {e}")
+        return jsonify({"status": "failed", "message": str(e)}), 500
 
 @app.route('/api/upload', methods=['POST', 'OPTIONS'])
 def upload_file():
