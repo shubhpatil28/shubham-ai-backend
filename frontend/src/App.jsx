@@ -183,8 +183,12 @@ const App = () => {
 
       if (error) {
         addLog(error, 'error');
+        setCoreState('warning');
       } else {
-        addLog(data.message, data.status === 'success' ? 'response' : 'warning');
+        const isSuccess = data.status === 'success' || data.status === 'pending';
+        addLog(data.message, isSuccess ? 'response' : 'error');
+        if (data.status === 'failed') setCoreState('warning');
+        else addLog("RELAYING TO LOCAL AGENT...", "system");
       }
       return; 
     }

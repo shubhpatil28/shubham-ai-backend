@@ -8,3 +8,5 @@ marshmallow
 PyPDF2
 Pillow
 python-dotenv
+flask-socketio
+eventlet

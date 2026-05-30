@@ -42,7 +42,7 @@ export default function App() {
         const data = await response.json();
         const aiMessage = {
           sender: "ai",
-          text: data.message || "Command executed",
+          text: data.message || (data.status === 'pending' ? "Relaying to local machine..." : "Command executed"),
         };
         setChat((prev) => [...prev, aiMessage]);
         setMessage("");
