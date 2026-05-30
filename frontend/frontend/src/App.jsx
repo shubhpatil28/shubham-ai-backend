@@ -10,6 +10,7 @@ export default function App() {
   const sendMessage = async () => {
 
     if (!message.trim()) return;
+    const lowerText = message.toLowerCase();
 
     const userMessage = {
       sender: "user",
@@ -18,8 +19,37 @@ export default function App() {
 
     setChat((prev) => [...prev, userMessage]);
 
-    try {
+    // Command Interception Layer
+    const systemTriggers = [
+      'open chrome', 'open vscode', 'open whatsapp', 
+      'open downloads', 'open documents', 'create folder', 
+      'shutdown', 'restart', 'shutdown pc', 'restart pc'
+    ];
+    const isSystemCommand = systemTriggers.some(t => lowerText.includes(t));
 
+    try {
+      if (isSystemCommand) {
+        console.log("ROUTED_TO_SYSTEM_COMMAND");
+        const response = await fetch(`${API_URL}/api/system-command`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            command: message,
+          }),
+        });
+        const data = await response.json();
+        const aiMessage = {
+          sender: "ai",
+          text: data.message || "Command executed",
+        };
+        setChat((prev) => [...prev, aiMessage]);
+        setMessage("");
+        return;
+      }
+
+      console.log("ROUTED_TO_CHAT");
       const response = await fetch(`${API_URL}/api/chat`, {
         method: "POST",
         headers: {
