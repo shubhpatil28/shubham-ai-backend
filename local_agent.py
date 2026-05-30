@@ -2,6 +2,9 @@ import socketio
 import subprocess
 import os
 import time
+import sys
+import platform
+import uuid
 from pathlib import Path
 
 # ── SHUBHAM AI OS — Local Machine Agent ──
@@ -10,49 +13,75 @@ from pathlib import Path
 
 # Configuration
 API_URL = "https://shubham-ai-backend.onrender.com"
+DEVICE_ID = str(uuid.getnode())
 
 sio = socketio.Client()
+
+def print_diagnostics():
+    print("=================================")
+    print("     SHUBHAM AI LOCAL AGENT      ")
+    print("=================================")
+    print(f"Python Version:  {sys.version.split()[0]}")
+    print(f"OS:              {platform.system()} {platform.release()}")
+    print(f"Backend URL:     {API_URL}")
+    print(f"Device ID:       {DEVICE_ID}")
+    print(f"SocketIO Status: {'Connected' if sio.connected else 'Disconnected'}")
+    print("=================================")
 
 @sio.event
 def connect():
     print("\n✅ CONNECTED TO SHUBHAM AI CLOUD BACKEND")
-    print("📡 STATUS: LISTENING FOR DIRECTIVES")
-    sio.emit('agent_login', {'device_type': 'windows_machine'})
+    print("✅ LISTENING FOR DIRECTIVES")
+    # Emit authentication / registration
+    sio.emit('agent_login', {
+        'device_type': 'windows_machine',
+        'device_id': DEVICE_ID,
+        'platform': platform.system()
+    })
+
+@sio.event
+def connect_error(data):
+    print(f"\n❌ CONNECTION_FAILED: {data}")
 
 @sio.event
 def disconnect():
     print("\n❌ DISCONNECTED FROM BACKEND")
     print("🔄 STANDBY: ATTEMPTING RECONNECTION...")
 
+@sio.on('login_success')
+def on_login_success(data):
+    print(f"🔐 AUTHENTICATION_SUCCESS: {data.get('status')}")
+
 @sio.on('execute_command')
 def on_execute_command(data):
     command = data.get('command', '').lower()
-    print(f"\n📥 INCOMING DIRECTIVE: {command.upper()}")
+    print(f"\n📥 INCOMING DIRECTIVE: {command}")
     
     try:
+        success = False
         # ── Application Launchers ──
         if "open chrome" in command:
             subprocess.Popen(["start", "chrome"], shell=True)
-            print("🚀 EXECUTION_SUCCESS: GOOGLE_CHROME_LAUNCHED")
+            success = True
             
         elif "open vscode" in command:
             subprocess.Popen(["code"], shell=True)
-            print("🚀 EXECUTION_SUCCESS: VS_CODE_LAUNCHED")
+            success = True
 
         elif "open whatsapp" in command:
             subprocess.Popen(["start", "whatsapp://"], shell=True)
-            print("🚀 EXECUTION_SUCCESS: WHATSAPP_LAUNCHED")
+            success = True
 
         # ── System Directories ──
         elif "open downloads" in command:
             path = str(Path.home() / "Downloads")
             subprocess.Popen(["explorer", path])
-            print("🚀 EXECUTION_SUCCESS: EXPLORING_DOWNLOADS")
+            success = True
             
         elif "open documents" in command:
             path = str(Path.home() / "Documents")
             subprocess.Popen(["explorer", path])
-            print("🚀 EXECUTION_SUCCESS: EXPLORING_DOCUMENTS")
+            success = True
 
         # ── Utilities ──
         elif "create folder" in command:
@@ -61,22 +90,27 @@ def on_execute_command(data):
                 folder_name = "New AI Folder"
             path = Path.home() / "Desktop" / folder_name
             os.makedirs(path, exist_ok=True)
-            print(f"🚀 EXECUTION_SUCCESS: FOLDER_CREATED: {folder_name}")
+            success = True
 
         # ── Dangerous Actions ──
         elif "shutdown pc" in command:
-            print("⚠️ DANGEROUS_ACTION_TRIGGERED: SHUTDOWN")
+            print("⚠️ DANGEROUS_ACTION: SHUTDOWN INITIATED")
             subprocess.Popen(["shutdown", "/s", "/t", "60"])
+            success = True
             
         elif "restart pc" in command:
-            print("⚠️ DANGEROUS_ACTION_TRIGGERED: RESTART")
+            print("⚠️ DANGEROUS_ACTION: RESTART INITIATED")
             subprocess.Popen(["shutdown", "/r", "/t", "60"])
+            success = True
 
+        if success:
+            print("EXECUTION_SUCCESS")
         else:
-            print(f"⚠️ COMMAND_REJECTED: UNRECOGNIZED_INSTRUCTION")
+            print("⚠️ EXECUTION_FAILED: UNRECOGNIZED_COMMAND")
 
     except Exception as e:
-        print(f"❌ EXECUTION_CRITICAL_ERROR: {str(e)}")
+        print("EXECUTION_FAILED")
+        print(f"ERROR: {str(e)}")
 
 # Heartbeat loop
 def start_heartbeat():
@@ -86,14 +120,19 @@ def start_heartbeat():
         time.sleep(30)
 
 if __name__ == "__main__":
-    print("──────────────────────────────────────────")
-    print("   SHUBHAM AI OS — LOCAL AGENT v1.0")
-    print("──────────────────────────────────────────")
+    test_mode = "--test" in sys.argv
     
+    print_diagnostics()
+    
+    if test_mode:
+        print("🧪 TEST MODE ACTIVE: AGENT WILL CONNECT AND WAIT FOR COMMANDS")
+
+    # Reconnection loop
     while True:
         try:
             if not sio.connected:
                 sio.connect(API_URL)
             sio.wait()
         except Exception as e:
+            print(f"❌ Connection error: {e}")
             time.sleep(10)
