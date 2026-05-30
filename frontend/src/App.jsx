@@ -162,16 +162,34 @@ const App = () => {
     const lowerText = messageText.toLowerCase();
 
     // Command Interception Layer
-    const systemTriggers = ['open chrome', 'open vscode', 'open whatsapp', 'open downloads', 'open documents', 'create folder', 'shutdown', 'restart'];
+    const systemTriggers = [
+      'open chrome', 'open vscode', 'open whatsapp', 
+      'open downloads', 'open documents', 'create folder', 
+      'shutdown', 'restart', 'shutdown pc', 'restart pc'
+    ];
     const matchedTrigger = systemTriggers.find(t => lowerText.includes(t));
 
     if (matchedTrigger) {
+      console.log("ROUTED_TO_SYSTEM_COMMAND");
       setActiveTab('system');
       setActiveAgentId('terminus');
       addLog(`System Directive Intercepted: ${matchedTrigger.toUpperCase()}`, 'action');
+      
+      const { data, error } = await safeFetch('/api/system-command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: messageText }),
+      });
+
+      if (error) {
+        addLog(error, 'error');
+      } else {
+        addLog(data.message, data.status === 'success' ? 'response' : 'warning');
+      }
       return; 
     }
 
+    console.log("ROUTED_TO_CHAT");
     setCoreState('processing');
     addLog(`Direct Link Command: "${messageText}"`, 'action');
     const { data, error } = await safeFetch('/api/chat', {
