@@ -133,12 +133,8 @@ if __name__ == "__main__":
             if not sio.connected:
                sio.connect(
     API_URL,
-<<<<<<< HEAD
     transports=["polling"],
     wait_timeout=30
-=======
-    transports=['polling']
->>>>>>> eb94ce88b5f81179faad2b3dded8b191a8e8bb0c
 )
             sio.wait()
         except Exception as e:
