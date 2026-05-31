@@ -161,24 +161,24 @@ const App = () => {
     if (!messageText?.trim()) return;
     const lowerText = messageText.toLowerCase();
 
-    // Command Interception Layer
+    // Command Interception Layer - Hardened Regex
     const systemTriggers = [
-      'open chrome', 'open vscode', 'open whatsapp', 
-      'open downloads', 'open documents', 'create folder', 
-      'shutdown', 'restart', 'shutdown pc', 'restart pc'
+      /\bopen chrome\b/, /\bopen vscode\b/, /\bopen whatsapp\b/, 
+      /\bopen downloads\b/, /\bopen documents\b/, /\bcreate folder\b/, 
+      /\bshutdown\b/, /\brestart\b/, /\bshutdown pc\b/, /\brestart pc\b/
     ];
-    const matchedTrigger = systemTriggers.find(t => lowerText.includes(t));
+    const matchedTrigger = systemTriggers.find(regex => regex.test(lowerText.trim()));
 
     if (matchedTrigger) {
-      console.log("ROUTED_TO_SYSTEM_COMMAND");
+      console.log("ROUTED_TO_SYSTEM_COMMAND", lowerText);
       setActiveTab('system');
       setActiveAgentId('terminus');
-      addLog(`System Directive Intercepted: ${matchedTrigger.toUpperCase()}`, 'action');
+      addLog(`System Directive Intercepted: ${messageText.toUpperCase()}`, 'action');
       
       const { data, error } = await safeFetch('/api/system-command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: messageText }),
+        body: JSON.stringify({ command: messageText.trim() }),
       });
 
       if (error) {
@@ -193,13 +193,13 @@ const App = () => {
       return; 
     }
 
-    console.log("ROUTED_TO_CHAT");
+    console.log("ROUTED_TO_CHAT", lowerText);
     setCoreState('processing');
     addLog(`Direct Link Command: "${messageText}"`, 'action');
     const { data, error } = await safeFetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: messageText }),
+      body: JSON.stringify({ message: messageText.trim() }),
     });
     if (error) {
       setCoreState('warning');
