@@ -1,9 +1,9 @@
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, current_app
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO, emit
 from marshmallow import Schema, fields
-import os
+import os, json
 import datetime
 import logging
 import sys
@@ -88,7 +88,16 @@ def handle_disconnect():
 
 @app.route("/api/agent/status")
 def agent_status():
-    return jsonify(agent_state)
+    # Diagnostic payload
+    diagnostic = {
+        "worker_pid": os.getpid(),
+        "connected": agent_state.get("status") == "online",
+        "timestamp": datetime.datetime.now().isoformat()
+    }
+    # Merge diagnostic info into the global state response
+    response = {**agent_state, **diagnostic}
+    logger.info(f"/api/agent/status accessed – pid={os.getpid()}, status={agent_state.get('status')}")
+    return jsonify(response)
 
 # ══════════════════════════════════════════════════════════════
 # 2. CONFIGURATION & CORS (ENTERPRISE STABILIZATION)
