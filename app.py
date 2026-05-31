@@ -24,13 +24,29 @@ logging.basicConfig(
 logger = logging.getLogger("SHUBHAM-AI")
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+
+# Allowed origins for both HTTP and WebSocket
+ALLOWED_ORIGINS = [
+    "https://shubham-ai-os-fronted.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:5174",
+]
+
+socketio = SocketIO(
+    app,
+    cors_allowed_origins=ALLOWED_ORIGINS,
+    async_mode='eventlet',
+    logger=True,
+    engineio_logger=True
+)
 
 # Global state for connected agent
 agent_state = {
     "status": "offline",
     "last_heartbeat": None,
-    "sid": None
+    "sid": None,
+    "device_id": None,
+    "platform": None
 }
 
 # ══════════════════════════════════════════════════════════════
@@ -39,6 +55,7 @@ agent_state = {
 
 @socketio.on('connect')
 def handle_connect():
+    print(f"🔌 CLIENT_CONNECTED: sid={request.sid}")
     logger.info(f"Client connected: {request.sid}")
 
 @socketio.on('agent_login')
@@ -46,6 +63,9 @@ def handle_agent_login(data):
     agent_state["status"] = "online"
     agent_state["sid"] = request.sid
     agent_state["last_heartbeat"] = datetime.datetime.now().isoformat()
+    agent_state["device_id"] = data.get("device_id")
+    agent_state["platform"] = data.get("platform")
+    print(f"✅ AGENT_REGISTERED: sid={request.sid} device={data.get('device_id')} platform={data.get('platform')}")
     logger.info(f"Local Agent registered: {request.sid}")
     emit('login_success', {'status': 'authenticated'})
 
@@ -53,12 +73,17 @@ def handle_agent_login(data):
 def handle_heartbeat(data):
     agent_state["last_heartbeat"] = datetime.datetime.now().isoformat()
     agent_state["status"] = "online"
+    print(f"💓 HEARTBEAT: sid={request.sid} time={agent_state['last_heartbeat']}")
 
 @socketio.on('disconnect')
 def handle_disconnect():
+    print(f"❌ CLIENT_DISCONNECTED: sid={request.sid}")
     if request.sid == agent_state["sid"]:
         agent_state["status"] = "offline"
         agent_state["sid"] = None
+        agent_state["device_id"] = None
+        agent_state["platform"] = None
+        print("⚠️ AGENT_OFFLINE: Local machine agent disconnected.")
     logger.info(f"Client disconnected: {request.sid}")
 
 @app.route("/api/agent/status")
@@ -77,14 +102,12 @@ app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Primary CORS Configuration
+# Scope to /api/* only — do NOT intercept /socket.io/* (handled by Flask-SocketIO)
 CORS(
     app,
     resources={
-        r"/*": {
-            "origins": [
-                "https://shubham-ai-os-fronted.vercel.app",
-                "http://localhost:5173"
-            ]
+        r"/api/*": {
+            "origins": ALLOWED_ORIGINS
         }
     },
     supports_credentials=True

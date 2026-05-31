@@ -131,11 +131,12 @@ if __name__ == "__main__":
     while True:
         try:
             if not sio.connected:
-               sio.connect(
-    API_URL,
-    transports=["polling"],
-    wait_timeout=30
-)
+                sio.connect(
+                    API_URL,
+                    transports=["polling"],
+                    wait_timeout=30,
+                    headers={"Origin": "https://shubham-ai-os-fronted.vercel.app"}
+                )
             sio.wait()
         except Exception as e:
             print(f"❌ Connection error: {e}")
