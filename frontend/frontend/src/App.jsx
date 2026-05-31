@@ -19,25 +19,48 @@ export default function App() {
 
     setChat((prev) => [...prev, userMessage]);
 
-    // Command Interception Layer - Hardened Regex
-    const systemTriggers = [
-      /\bopen chrome\b/, /\bopen vscode\b/, /\bopen whatsapp\b/, 
-      /\bopen downloads\b/, /\bopen documents\b/, /\bcreate folder\b/, 
-      /\bshutdown\b/, /\brestart\b/, /\bshutdown pc\b/, /\brestart pc\b/
+    // ── STEP 1: NORMALIZE INPUT ──
+    const normalizedCommand = message
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+
+    const systemPatterns = [
+      /^open chrome$/,
+      /^open vscode$/,
+      /^open whatsapp$/,
+      /^open downloads$/,
+      /^open documents$/,
+      /^create folder\b/,
+      /^shutdown\b/,
+      /^restart\b/,
+      /^shutdown pc$/,
+      /^restart pc$/
     ];
-    
-    const isSystemCommand = systemTriggers.some(regex => regex.test(lowerText.trim()));
+
+    const isSystemCommand = systemPatterns.some(pattern => pattern.test(normalizedCommand));
+
+    console.log("INPUT:", message);
+    console.log("NORMALIZED:", normalizedCommand);
+    console.log("IS_SYSTEM_COMMAND:", isSystemCommand);
 
     try {
       if (isSystemCommand) {
-        console.log("ROUTED_TO_SYSTEM_COMMAND", lowerText);
+        console.log("ROUTED_TO_SYSTEM_COMMAND");
+        
+        // Visible debug card for verification
+        setChat((prev) => [...prev, {
+          sender: "ai",
+          text: `SYSTEM_COMMAND_DETECTED: ${normalizedCommand}\nROUTING: SYSTEM COMMAND ENGINE 🖥️`
+        }]);
+
         const response = await fetch(`${API_URL}/api/system-command`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            command: message.trim(),
+            command: normalizedCommand,
           }),
         });
         const data = await response.json();
@@ -47,10 +70,10 @@ export default function App() {
         };
         setChat((prev) => [...prev, aiMessage]);
         setMessage("");
-        return;
+        return; // CRITICAL: Stop here
       }
 
-      console.log("ROUTED_TO_CHAT", lowerText);
+      console.log("ROUTED_TO_CHAT");
       const response = await fetch(`${API_URL}/api/chat`, {
         method: "POST",
         headers: {

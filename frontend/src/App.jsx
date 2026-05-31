@@ -159,26 +159,45 @@ const App = () => {
 
   const processInput = async (messageText) => {
     if (!messageText?.trim()) return;
-    const lowerText = messageText.toLowerCase();
+    
+    // ── STEP 1: NORMALIZE INPUT ──
+    const normalizedCommand = messageText
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
 
-    // Command Interception Layer - Hardened Regex
-    const systemTriggers = [
-      /\bopen chrome\b/, /\bopen vscode\b/, /\bopen whatsapp\b/, 
-      /\bopen downloads\b/, /\bopen documents\b/, /\bcreate folder\b/, 
-      /\bshutdown\b/, /\brestart\b/, /\bshutdown pc\b/, /\brestart pc\b/
+    const systemPatterns = [
+      /^open chrome$/,
+      /^open vscode$/,
+      /^open whatsapp$/,
+      /^open downloads$/,
+      /^open documents$/,
+      /^create folder\b/,
+      /^shutdown\b/,
+      /^restart\b/,
+      /^shutdown pc$/,
+      /^restart pc$/
     ];
-    const matchedTrigger = systemTriggers.find(regex => regex.test(lowerText.trim()));
 
-    if (matchedTrigger) {
-      console.log("ROUTED_TO_SYSTEM_COMMAND", lowerText);
+    const isSystemCommand = systemPatterns.some(pattern => pattern.test(normalizedCommand));
+
+    console.log("INPUT:", messageText);
+    console.log("NORMALIZED:", normalizedCommand);
+    console.log("IS_SYSTEM_COMMAND:", isSystemCommand);
+
+    if (isSystemCommand) {
+      console.log("ROUTED_TO_SYSTEM_COMMAND");
       setActiveTab('system');
       setActiveAgentId('terminus');
-      addLog(`System Directive Intercepted: ${messageText.toUpperCase()}`, 'action');
       
+      // Visible debug feedback
+      addLog(`[SYSTEM_DETECTION] MATCHED: ${normalizedCommand}`, 'action');
+      addLog(`ROUTING: SYSTEM COMMAND ENGINE`, 'system');
+
       const { data, error } = await safeFetch('/api/system-command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: messageText.trim() }),
+        body: JSON.stringify({ command: normalizedCommand }),
       });
 
       if (error) {
@@ -188,25 +207,28 @@ const App = () => {
         const isSuccess = data.status === 'success' || data.status === 'pending';
         addLog(data.message, isSuccess ? 'response' : 'error');
         if (data.status === 'failed') setCoreState('warning');
-        else addLog("RELAYING TO LOCAL AGENT...", "system");
       }
-      return; 
+      return; // CRITICAL: Stop here for system commands
     }
 
-    console.log("ROUTED_TO_CHAT", lowerText);
+    // ── STEP 2: FALLBACK TO CHAT ──
+    console.log("ROUTED_TO_CHAT");
     setCoreState('processing');
     addLog(`Direct Link Command: "${messageText}"`, 'action');
+    
     const { data, error } = await safeFetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: messageText.trim() }),
+      body: JSON.stringify({ message: messageText }),
     });
+
     if (error) {
       setCoreState('warning');
       addLog(error, 'error');
       setTimeout(() => setCoreState('idle'), 3000);
       return;
     }
+    
     if (data?.action) simulateTaskPipeline(data.action.type, messageText);
     else setActiveAgentId('nexus');
     
