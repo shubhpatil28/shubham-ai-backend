@@ -14,6 +14,7 @@ export default function RouteIndicator({ message }) {
     setIsTyping(true);
     const timeoutId = setTimeout(async () => {
       try {
+        console.log("ACTIVE_CHAT_HANDLER: component_route_indicator");
         const response = await fetch(`${API_URL}/api/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

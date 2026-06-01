@@ -40,6 +40,7 @@ export default function App() {
 
     const isSystemCommand = systemPatterns.some(pattern => pattern.test(normalizedCommand));
 
+    console.log("ACTIVE_CHAT_HANDLER: nested_app_sendMessage");
     console.log("INPUT:", message);
     console.log("NORMALIZED:", normalizedCommand);
     console.log("IS_SYSTEM_COMMAND:", isSystemCommand);

@@ -22,6 +22,7 @@ export default function useStreamingChat() {
     }
     controllerRef.current = new AbortController();
     try {
+      console.log("ACTIVE_CHAT_HANDLER: hook_use_streaming");
       const response = await fetch(`${API_URL}/api/stream-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

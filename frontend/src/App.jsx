@@ -181,6 +181,7 @@ const App = () => {
 
     const isSystemCommand = systemPatterns.some(pattern => pattern.test(normalizedCommand));
 
+    console.log("ACTIVE_CHAT_HANDLER: cinematic_app_processInput");
     console.log("INPUT:", messageText);
     console.log("NORMALIZED:", normalizedCommand);
     console.log("IS_SYSTEM_COMMAND:", isSystemCommand);
