@@ -43,6 +43,7 @@ try {
 
 // ── App ──────────────────────────────────────────────────────
 const App = () => {
+  console.log("APP_V5_RUNTIME_LOADED");
   console.log("APP_COMPONENT_MOUNTED", "App.jsx");
   const [isBooted, setIsBooted] = useState(false);
   const [activeTab, setActiveTab] = useState('core');
@@ -160,6 +161,7 @@ const App = () => {
   };
 
   const processInput = async (messageText) => {
+    console.log("PROCESS_INPUT_CALLED", messageText);
     if (!messageText?.trim()) return;
     
     // ── STEP 1: NORMALIZE INPUT ──
@@ -181,13 +183,16 @@ const App = () => {
       /^restart pc$/
     ];
 
+    console.log("NORMALIZED_COMMAND", normalizedCommand);
     const isSystemCommand = systemPatterns.some(pattern => pattern.test(normalizedCommand));
+    console.log("IS_SYSTEM_COMMAND", isSystemCommand);
 
     console.log("ACTIVE_RUNTIME_PATCH: v4_CinematicApp");
     console.log("INPUT:", messageText);
     console.log("IS_SYSTEM:", isSystemCommand);
 
     if (isSystemCommand) {
+      console.log("ROUTING_TO_SYSTEM_COMMAND");
       console.log("ROUTED_TO_SYSTEM_COMMAND_V4");
       addLog(`[MATCH] SYSTEM_COMMAND: ${normalizedCommand}`, 'system');
       addLog(`[ACTION] DISPATCHING TO LOCAL AGENT...`, 'action');
@@ -214,6 +219,7 @@ const App = () => {
     }
 
     // ── STEP 2: FALLBACK TO CHAT ──
+    console.log("ROUTING_TO_CHAT");
     console.log("ROUTED_TO_CHAT");
     setCoreState('processing');
     addLog(`Direct Link Command: "${messageText}"`, 'action');
@@ -307,6 +313,7 @@ const App = () => {
                          <div className="absolute inset-0 w-3 h-3 rounded-full bg-[#00f3ff] animate-ping" />
                       </div>
                       SHUBHAM AI <span className="font-light text-[#00f3ff]/60 text-xs tracking-[1em]">INTERNET_CORE</span>
+                      <span className="text-[10px] text-pink-500 font-mono font-bold">[DEBUG] APP_V5_RUNTIME_LOADED</span>
                     </h1>
                     <div className="flex items-center gap-4 mt-2">
                        <span className="text-[9px] font-mono font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
