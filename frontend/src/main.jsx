@@ -1,4 +1,5 @@
 import { StrictMode } from 'react'
+console.log("DEPLOYMENT_AUDIT_V1");
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
