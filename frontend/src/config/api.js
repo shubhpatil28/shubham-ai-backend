@@ -14,6 +14,9 @@ const DEFAULT_TIMEOUT_MS = 15000;
  * Returns { data, error } — never throws.
  */
 export async function safeFetch(path, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) {
+  if (path === '/api/chat') console.log("CHAT_REQUEST_SOURCE", window.location.pathname);
+  if (path === '/api/system-command') console.log("SYSTEM_REQUEST_SOURCE", window.location.pathname);
+  
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 

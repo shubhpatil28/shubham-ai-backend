@@ -3,6 +3,7 @@ import { Cpu, ExternalLink, Sparkles, Download, Globe, CheckCircle2, RotateCcw, 
 import { API_URL } from '../config/api';
 
 const SiteBuilder = ({ onLog }) => {
+  console.log("APP_COMPONENT_MOUNTED", "SiteBuilder.jsx");
   const [siteName, setSiteName] = useState('');
   const [prompt, setPrompt] = useState('');
   const [generating, setGenerating] = useState(false);

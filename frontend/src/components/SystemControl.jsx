@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { safeFetch } from '../config/api';
 
 const SystemControl = ({ onLog }) => {
+  console.log("APP_COMPONENT_MOUNTED", "SystemControl.jsx");
   const [logs, setSystemLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
@@ -18,6 +19,7 @@ const SystemControl = ({ onLog }) => {
     setPendingAction(null);
     onLog?.(`Initiating System Command: ${command.toUpperCase()}`, 'action');
 
+    console.log("SYSTEM_REQUEST_SOURCE", window.location.pathname);
     const { data, error } = await safeFetch('/api/system-command', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -3,6 +3,7 @@ import { Send, Calendar, Users, Shield, MessageSquare, Trash2, Plus, RefreshCw, 
 import { API_URL } from '../config/api';
 
 const WhatsAppHub = ({ onLog }) => {
+  console.log("APP_COMPONENT_MOUNTED", "WhatsAppHub.jsx");
   const [status, setStatus] = useState('offline');
   const [loading, setLoading] = useState(false);
   const [contacts, setContacts] = useState([]);

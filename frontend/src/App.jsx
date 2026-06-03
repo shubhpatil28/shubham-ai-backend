@@ -43,6 +43,7 @@ try {
 
 // ── App ──────────────────────────────────────────────────────
 const App = () => {
+  console.log("APP_COMPONENT_MOUNTED", "App.jsx");
   const [isBooted, setIsBooted] = useState(false);
   const [activeTab, setActiveTab] = useState('core');
   
@@ -148,6 +149,7 @@ const App = () => {
       setActiveAgentId(stage === 'generating' ? targetAgent : 'nexus');
       await new Promise(r => setTimeout(r, stage === 'generating' ? 3000 : 1500));
     }
+    addLog(`[OS] ROUTING_PATCH_V4: ACTIVE`, 'system');
     addLog(`Task ${task} completed by autonomous swarm.`, 'response');
     setTimeout(() => {
       setCurrentStage('queued');
@@ -181,20 +183,19 @@ const App = () => {
 
     const isSystemCommand = systemPatterns.some(pattern => pattern.test(normalizedCommand));
 
-    console.log("ACTIVE_CHAT_HANDLER: cinematic_app_processInput");
+    console.log("ACTIVE_RUNTIME_PATCH: v4_CinematicApp");
     console.log("INPUT:", messageText);
-    console.log("NORMALIZED:", normalizedCommand);
-    console.log("IS_SYSTEM_COMMAND:", isSystemCommand);
+    console.log("IS_SYSTEM:", isSystemCommand);
 
     if (isSystemCommand) {
-      console.log("ROUTED_TO_SYSTEM_COMMAND");
+      console.log("ROUTED_TO_SYSTEM_COMMAND_V4");
+      addLog(`[MATCH] SYSTEM_COMMAND: ${normalizedCommand}`, 'system');
+      addLog(`[ACTION] DISPATCHING TO LOCAL AGENT...`, 'action');
+      
       setActiveTab('system');
       setActiveAgentId('terminus');
-      
-      // Visible debug feedback
-      addLog(`[SYSTEM_DETECTION] MATCHED: ${normalizedCommand}`, 'action');
-      addLog(`ROUTING: SYSTEM COMMAND ENGINE`, 'system');
 
+      console.log("SYSTEM_REQUEST_SOURCE", window.location.pathname);
       const { data, error } = await safeFetch('/api/system-command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -202,14 +203,14 @@ const App = () => {
       });
 
       if (error) {
-        addLog(error, 'error');
+        addLog(`[REELAY_ERROR] ${error}`, 'error');
         setCoreState('warning');
       } else {
         const isSuccess = data.status === 'success' || data.status === 'pending';
         addLog(data.message, isSuccess ? 'response' : 'error');
         if (data.status === 'failed') setCoreState('warning');
       }
-      return; // CRITICAL: Stop here for system commands
+      return;
     }
 
     // ── STEP 2: FALLBACK TO CHAT ──
@@ -217,6 +218,7 @@ const App = () => {
     setCoreState('processing');
     addLog(`Direct Link Command: "${messageText}"`, 'action');
     
+    console.log("CHAT_REQUEST_SOURCE", window.location.pathname);
     const { data, error } = await safeFetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

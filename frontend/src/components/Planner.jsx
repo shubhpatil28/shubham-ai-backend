@@ -4,6 +4,7 @@ import { safeFetch } from '../config/api';
 import GlassLoader from './GlassLoader';
 
 const Planner = () => {
+  console.log("APP_COMPONENT_MOUNTED", "Planner.jsx");
   const [tasks, setTasks] = useState([]);
   const [newTitle, setNewTitle] = useState('');
   const [newTime, setNewTime] = useState('');

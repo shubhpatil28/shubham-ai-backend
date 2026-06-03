@@ -16,6 +16,7 @@ const getCachedMemories = () => {
 };
 
 const MemoryVault = ({ onLog }) => {
+  console.log("APP_COMPONENT_MOUNTED", "MemoryVault.jsx");
   const [memories, setMemories] = useState([]);
   const [filter, setFilter] = useState({ category: '', q: '' });
   const [newMemory, setNewMemory] = useState({ title: '', content: '', category: '' });
