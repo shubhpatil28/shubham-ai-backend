@@ -245,37 +245,51 @@ def stream_chat():
 def chat_history():
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
-    # Returns last 50 memories as a simulated chat history for the UI
-    mems = Memory.query.order_by(Memory.timestamp.desc()).limit(50).all()
-    history = [{"sender": "user" if i%2==0 else "nexus", "message": m.content, "timestamp": m.timestamp} for i, m in enumerate(mems)]
-    return jsonify(history)
+    try:
+        # Returns last 50 memories as a simulated chat history for the UI
+        mems = Memory.query.order_by(Memory.timestamp.desc()).limit(50).all()
+        history = [{"sender": "user" if i%2==0 else "nexus", "message": m.content, "timestamp": m.timestamp} for i, m in enumerate(mems)]
+        return jsonify(history)
+    except Exception as e:
+        logger.exception("Chat history error")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/memory', methods=['GET', 'POST', 'OPTIONS'])
 def manage_memory():
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
-    if request.method == 'GET':
-        mems = Memory.query.order_by(Memory.timestamp.desc()).all()
-        return jsonify(memories_schema.dump(mems))
-    if request.method == 'POST':
-        data = request.get_json()
-        new_mem = Memory(
-            title=data.get('title'),
-            content=data.get('content'),
-            category=data.get('category', 'note')
-        )
-        db.session.add(new_mem)
-        db.session.commit()
-        return jsonify(memory_schema.dump(new_mem))
+    try:
+        if request.method == 'GET':
+            mems = Memory.query.order_by(Memory.timestamp.desc()).all()
+            return jsonify(memories_schema.dump(mems))
+        if request.method == 'POST':
+            data = request.get_json()
+            new_mem = Memory(
+                title=data.get('title'),
+                content=data.get('content'),
+                category=data.get('category', 'note')
+            )
+            db.session.add(new_mem)
+            db.session.commit()
+            return jsonify(memory_schema.dump(new_mem))
+    except Exception as e:
+        logger.exception("Memory management error")
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/memory/<int:id>', methods=['DELETE', 'OPTIONS'])
 def delete_memory(id):
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
-    mem = Memory.query.get_or_404(id)
-    db.session.delete(mem)
-    db.session.commit()
-    return jsonify({"message": "Memory deleted"})
+    try:
+        mem = Memory.query.get_or_404(id)
+        db.session.delete(mem)
+        db.session.commit()
+        return jsonify({"message": "Memory deleted"})
+    except Exception as e:
+        logger.exception("Memory deletion error")
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/planner', methods=['GET', 'POST', 'OPTIONS'])
 def planner_list():

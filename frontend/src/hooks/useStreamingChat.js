@@ -27,6 +27,7 @@ export default function useStreamingChat() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
+        credentials: 'omit',
         signal: controllerRef.current.signal,
       });
       if (!response.body) {

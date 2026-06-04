@@ -37,7 +37,13 @@ const SystemControl = lazy(() => import('./components/SystemControl').catch(() =
 // ── Safe WebSocket init ──────────────────────────────────────
 let socket = null;
 try {
-  socket = io(API_URL, { transports: ['websocket', 'polling'], timeout: 5000 });
+  socket = io(API_URL, { 
+    transports: ['websocket', 'polling'], 
+    timeout: 30000,
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 5000
+  });
 } catch (e) {
   console.warn('[App] Socket.IO connection failed (non-fatal):', e.message);
 }

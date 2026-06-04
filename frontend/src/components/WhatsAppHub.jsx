@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Send, Calendar, Users, Shield, MessageSquare, Trash2, Plus, RefreshCw, Upload, FileText } from 'lucide-react';
-import { API_URL } from '../config/api';
+import { API_URL, safeFetch } from '../config/api';
 
 const WhatsAppHub = ({ onLog }) => {
   console.log("APP_COMPONENT_MOUNTED", "WhatsAppHub.jsx");
@@ -27,38 +27,23 @@ const WhatsAppHub = ({ onLog }) => {
   const [statusFilePath, setStatusFilePath] = useState('');
 
   const fetchStatus = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/whatsapp/status`);
-      if (res.ok) {
-        const data = await res.json();
-        setStatus(data.driver_status);
-      }
-    } catch (e) {
-      console.error(e);
+    const { data, error } = await safeFetch('/api/whatsapp/status');
+    if (!error && data) {
+      setStatus(data.driver_status);
     }
   };
 
   const fetchContacts = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/whatsapp/contacts`);
-      if (res.ok) {
-        const data = await res.json();
-        setContacts(data);
-      }
-    } catch (e) {
-      console.error(e);
+    const { data, error } = await safeFetch('/api/whatsapp/contacts');
+    if (!error && data) {
+      setContacts(data);
     }
   };
 
   const fetchSchedules = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/whatsapp/schedule`);
-      if (res.ok) {
-        const data = await res.json();
-        setSchedules(data);
-      }
-    } catch (e) {
-      console.error(e);
+    const { data, error } = await safeFetch('/api/whatsapp/schedule');
+    if (!error && data) {
+      setSchedules(data);
     }
   };
 
@@ -74,9 +59,8 @@ const WhatsAppHub = ({ onLog }) => {
     setLoading(true);
     if (onLog) onLog("Launching WhatsApp Web persistent driver...", "action");
     try {
-      const res = await fetch(`${API_URL}/api/whatsapp/open`, { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
+      const { data, error } = await safeFetch('/api/whatsapp/open', { method: 'POST' });
+      if (!error && data) {
         if (onLog) onLog(data.message, "response");
         fetchStatus();
       }
@@ -91,12 +75,12 @@ const WhatsAppHub = ({ onLog }) => {
     e.preventDefault();
     if (!newNickname || !newContactName) return;
     try {
-      const res = await fetch(`${API_URL}/api/whatsapp/contacts`, {
+      const { data, error } = await safeFetch('/api/whatsapp/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nickname: newNickname, contact_name: newContactName })
       });
-      if (res.ok) {
+      if (!error) {
         setNewNickname('');
         setNewContactName('');
         fetchContacts();
@@ -108,14 +92,10 @@ const WhatsAppHub = ({ onLog }) => {
   };
 
   const handleDeleteContact = async (id) => {
-    try {
-      const res = await fetch(`${API_URL}/api/whatsapp/contacts/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchContacts();
-        if (onLog) onLog("Contact mapping deleted.", "system");
-      }
-    } catch (e) {
-      console.error(e);
+    const { error } = await safeFetch(`/api/whatsapp/contacts/${id}`, { method: 'DELETE' });
+    if (!error) {
+      fetchContacts();
+      if (onLog) onLog("Contact mapping deleted.", "system");
     }
   };
 
@@ -123,13 +103,12 @@ const WhatsAppHub = ({ onLog }) => {
     e.preventDefault();
     if (!targetContact || !directMsg) return;
     try {
-      const res = await fetch(`${API_URL}/api/whatsapp/send`, {
+      const { data, error } = await safeFetch('/api/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipient: targetContact, message: directMsg })
       });
-      if (res.ok) {
-        const data = await res.json();
+      if (!error && data) {
         setDirectMsg('');
         if (onLog) onLog(data.message, "response");
       }
@@ -146,7 +125,7 @@ const WhatsAppHub = ({ onLog }) => {
     const formattedTime = schedTime.replace('T', ' ') + ':00';
 
     try {
-      const res = await fetch(`${API_URL}/api/whatsapp/schedule`, {
+      const { data, error } = await safeFetch('/api/whatsapp/schedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -156,7 +135,7 @@ const WhatsAppHub = ({ onLog }) => {
           file_path: schedFile || null
         })
       });
-      if (res.ok) {
+      if (!error) {
         setSchedContact('');
         setSchedMsg('');
         setSchedTime('');
@@ -170,14 +149,10 @@ const WhatsAppHub = ({ onLog }) => {
   };
 
   const handleDeleteSchedule = async (id) => {
-    try {
-      const res = await fetch(`${API_URL}/api/whatsapp/schedule/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchSchedules();
-        if (onLog) onLog("Scheduled message cancelled.", "system");
-      }
-    } catch (e) {
-      console.error(e);
+    const { error } = await safeFetch(`/api/whatsapp/schedule/${id}`, { method: 'DELETE' });
+    if (!error) {
+      fetchSchedules();
+      if (onLog) onLog("Scheduled message cancelled.", "system");
     }
   };
 
@@ -185,13 +160,12 @@ const WhatsAppHub = ({ onLog }) => {
     e.preventDefault();
     if (!statusFilePath) return;
     try {
-      const res = await fetch(`${API_URL}/api/whatsapp/upload-status`, {
+      const { data, error } = await safeFetch('/api/whatsapp/upload-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ file_path: statusFilePath })
       });
-      if (res.ok) {
-        const data = await res.json();
+      if (!error && data) {
         setStatusFilePath('');
         if (onLog) onLog(data.message, "response");
       }
