@@ -28,6 +28,7 @@ app = Flask(__name__)
 # Allowed origins for both HTTP and WebSocket
 ALLOWED_ORIGINS = [
     "https://shubham-ai-os-fronted.vercel.app",
+    "https://shubham-ai-os-frontend.vercel.app",
     "http://localhost:5173",
     "http://localhost:5174",
 ]
@@ -37,7 +38,10 @@ socketio = SocketIO(
     cors_allowed_origins=ALLOWED_ORIGINS,
     async_mode='eventlet',
     logger=True,
-    engineio_logger=True
+    engineio_logger=True,
+    allow_upgrades=True,
+    ping_timeout=60,
+    ping_interval=25
 )
 
 # Global state for connected agent
@@ -111,15 +115,15 @@ app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Primary CORS Configuration
-# Scope to /api/* only — do NOT intercept /socket.io/* (handled by Flask-SocketIO)
+# Set supports_credentials=False for cross-origin compatibility without cookies
 CORS(
     app,
     resources={
-        r"/api/*": {
+        r"/*": {
             "origins": ALLOWED_ORIGINS
         }
     },
-    supports_credentials=True
+    supports_credentials=False
 )
 
 print("✅ CORS Header Duplication Issues Resolved")
@@ -137,6 +141,15 @@ class Memory(db.Model):
     category = db.Column(db.String(50), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
+class PlannerTask(db.Model):
+    __tablename__ = 'planner_tasks'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(300), nullable=False)
+    status = db.Column(db.String(20), default='pending')          # pending | completed
+    priority = db.Column(db.String(20), default='medium')         # low | medium | high
+    scheduled_time = db.Column(db.String(10), nullable=True)      # HH:MM or null
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
 class MemorySchema(Schema):
     id = fields.Int(dump_only=True)
     title = fields.Str(required=True)
@@ -146,6 +159,16 @@ class MemorySchema(Schema):
 
 memory_schema = MemorySchema()
 memories_schema = MemorySchema(many=True)
+
+def task_to_dict(t):
+    return {
+        "id": t.id,
+        "title": t.title,
+        "status": t.status,
+        "priority": t.priority,
+        "scheduled_time": t.scheduled_time,
+        "created_at": t.created_at.isoformat() if t.created_at else None,
+    }
 
 # ══════════════════════════════════════════════════════════════
 # 4. AI SERVICE INITIALIZATION
@@ -161,6 +184,7 @@ except Exception as e:
 
 with app.app_context():
     db.create_all()
+    print("✅ Database tables created (including planner_tasks)")
 
 # ══════════════════════════════════════════════════════════════
 # 5. ROUTES (WITH EXPLICIT OPTIONS SUPPORT)
@@ -254,11 +278,73 @@ def delete_memory(id):
     return jsonify({"message": "Memory deleted"})
 
 @app.route('/api/planner', methods=['GET', 'POST', 'OPTIONS'])
-@app.route('/api/planner/<int:id>', methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
-def manage_planner(id=None):
+def planner_list():
+    """GET → return task array, POST → create a task."""
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
-    return jsonify({"status": "success", "message": "Mission planning module active.", "id": id})
+
+    try:
+        if request.method == 'GET':
+            tasks = PlannerTask.query.order_by(PlannerTask.created_at.desc()).all()
+            return jsonify([task_to_dict(t) for t in tasks])
+
+        # POST — create task
+        data = request.get_json(force=True)
+        title = (data.get('title') or '').strip()
+        if not title:
+            return jsonify({"error": "Title is required"}), 400
+
+        new_task = PlannerTask(
+            title=title,
+            priority=data.get('priority', 'medium'),
+            scheduled_time=data.get('time'),
+        )
+        db.session.add(new_task)
+        db.session.commit()
+        return jsonify(task_to_dict(new_task)), 201
+
+    except Exception as e:
+        logger.exception("Planner list/create error")
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/planner/<int:id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
+def planner_detail(id):
+    """GET → single task, PUT → update, DELETE → remove."""
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+
+    try:
+        task = PlannerTask.query.get(id)
+        if not task:
+            return jsonify({"error": "Task not found"}), 404
+
+        if request.method == 'GET':
+            return jsonify(task_to_dict(task))
+
+        if request.method == 'PUT':
+            data = request.get_json(force=True)
+            if 'title' in data:
+                task.title = data['title']
+            if 'status' in data:
+                task.status = data['status']
+            if 'priority' in data:
+                task.priority = data['priority']
+            if 'time' in data:
+                task.scheduled_time = data['time']
+            db.session.commit()
+            return jsonify(task_to_dict(task))
+
+        if request.method == 'DELETE':
+            db.session.delete(task)
+            db.session.commit()
+            return jsonify({"message": "Task deleted"})
+
+    except Exception as e:
+        logger.exception("Planner detail error")
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/analyze-pdf', methods=['POST', 'OPTIONS'])
 def analyze_pdf():
