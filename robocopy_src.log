@@ -1,0 +1,74 @@
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Wednesday, June 3, 2026 10:46:28 PM
+   Source : c:\Users\Hp\OneDrive\Desktop\Shubham OS\frontend\src\
+     Dest : c:\Users\Hp\OneDrive\Desktop\Shubham OS\frontend-repo\frontend\src\
+
+    Files : *.*
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /R:1000000 /W:30 
+
+------------------------------------------------------------------------------
+
+	                   4	c:\Users\Hp\OneDrive\Desktop\Shubham OS\frontend\src\
+	    New File  		    2891	App.css100%  
+	    Older     		   25564	App.jsx100%  
+	    Older     		    4203	index.css100%  
+	    Older     		     363	main.jsx100%  
+	  New Dir          3	c:\Users\Hp\OneDrive\Desktop\Shubham OS\frontend\src\assets\
+	    New File  		   13057	hero.png100%  
+	    New File  		    4126	react.svg100%  
+	    New File  		    8709	vite.svg100%  
+	  New Dir         29	c:\Users\Hp\OneDrive\Desktop\Shubham OS\frontend\src\components\
+	    New File  		    6748	AgentNetwork.jsx100%  
+	    New File  		    7291	AgentOrb.jsx100%  
+	    New File  		    6367	AIOrb.jsx100%  
+	    New File  		    9977	BootScreen.jsx100%  
+	    New File  		    3953	ChatSidebar.jsx100%  
+	    New File  		    3071	Console.jsx100%  
+	    New File  		    4951	DataHub.jsx100%  
+	    New File  		    4469	ErrorBoundary.jsx100%  
+	    New File  		    1346	FallbackCard.jsx100%  
+	    New File  		    1830	GlassLoader.jsx100%  
+	    New File  		    4468	HolographicNotification.jsx100%  
+	    New File  		    4783	IntelligenceFeed.jsx100%  
+	    New File  		    4485	JarvisCore.jsx100%  
+	    New File  		    1962	MemoryCard.jsx100%  
+	    New File  		    2071	MemorySearchBar.jsx100%  
+	    New File  		    6370	MemoryVault.jsx100%  
+	    New File  		    2621	MessageBubble.jsx100%  
+	    New File  		    3920	NeuralBackground.jsx100%  
+	    New File  		    6340	Planner.jsx100%  
+	    New File  		    4026	RouteIndicator.jsx100%  
+	    New File  		   10242	SiteBuilder.jsx100%  
+	    New File  		    3519	StatusPanel.jsx100%  
+	    New File  		    6442	SystemControl.jsx100%  
+	    New File  		    5883	TaskPipeline.jsx100%  
+	    New File  		    1374	TypingIndicator.jsx100%  
+	    New File  		    2461	UploadCard.jsx100%  
+	    New File  		    3105	VoiceAssistant.jsx100%  
+	    New File  		   19485	WhatsAppHub.jsx100%  
+	    New File  		    5228	WorldHUD.jsx100%  
+	  New Dir          2	c:\Users\Hp\OneDrive\Desktop\Shubham OS\frontend\src\config\
+	    New File  		    2603	agents.js100%  
+	    New File  		    1671	api.js100%  
+	  New Dir          2	c:\Users\Hp\OneDrive\Desktop\Shubham OS\frontend\src\hooks\
+	    New File  		    2579	useStreamingChat.js100%  
+	    New File  		     853	useTypingEffect.js100%  
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :         5         4         1         0         0         0
+   Files :        40        40         0         0         0         0
+   Bytes :   210.3 k   210.3 k         0         0         0         0
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           4,142,442 Bytes/sec.
+   Speed :             237.032 MegaBytes/min.
+   Ended : Wednesday, June 3, 2026 10:46:28 PM
+
