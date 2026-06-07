@@ -382,12 +382,12 @@ def system_command():
         command = data.get('command', '').lower()
         confirmed = data.get('confirmed', False)
         
-        logger.info(f"SYSTEM_COMMAND_RECEIVED: {command}")
+        logger.info("SYSTEM_COMMAND_RECEIVED", command)
         
-        is_connected = agent_state.get("status") == "online"
-        logger.info(f"LOCAL_AGENT_CONNECTED: {is_connected}")
+        connected = agent_state.get("status") == "online"
+        logger.info("LOCAL_AGENT_CONNECTED", connected)
         
-        if not is_connected:
+        if not connected:
             return jsonify({
                 "success": False,
                 "error": "LOCAL_AGENT_OFFLINE",
