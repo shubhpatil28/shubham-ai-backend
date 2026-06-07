@@ -15,7 +15,7 @@ from pathlib import Path
 API_URL = "https://shubham-ai-backend.onrender.com"
 DEVICE_ID = str(uuid.getnode())
 
-sio = socketio.Client()
+sio = socketio.Client(reconnection=True, reconnection_attempts=0, reconnection_delay=5, reconnection_delay_max=30, logger=True, engineio_logger=True)
 
 def print_diagnostics():
     print("=================================")
@@ -117,7 +117,7 @@ def start_heartbeat():
     while True:
         if sio.connected:
             sio.emit('heartbeat', {})
-        time.sleep(30)
+        time.sleep(20)
 
 if __name__ == "__main__":
     test_mode = "--test" in sys.argv
