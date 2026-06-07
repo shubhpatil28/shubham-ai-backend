@@ -81,11 +81,16 @@ def handle_heartbeat(data):
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    agent_id = active_agents.pop(request.sid, None)
+    sid = request.sid
+    agent_id = active_agents.pop(sid, None)
     if agent_id and agent_id in active_agents:
-        active_agents.pop(agent_id)
-        logger.info(f"AGENT_DISCONNECTED: agent_id={agent_id}")
-    logger.info(f"CLIENT_DISCONNECTED: sid={request.sid}")
+        # Only remove the agent if the disconnecting SID is the CURRENT one for that agent
+        if active_agents[agent_id].get("sid") == sid:
+            active_agents.pop(agent_id)
+            logger.info(f"AGENT_DISCONNECTED: agent_id={agent_id}")
+        else:
+            logger.info(f"STALE_DISCONNECT_IGNORED: agent_id={agent_id} sid={sid}")
+    logger.info(f"CLIENT_DISCONNECTED: sid={sid}")
 
 @app.route("/api/agent/status")
 def agent_status():
