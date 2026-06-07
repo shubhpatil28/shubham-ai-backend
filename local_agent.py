@@ -52,65 +52,113 @@ def disconnect():
 def on_login_success(data):
     print(f"🔐 AUTHENTICATION_SUCCESS: {data.get('status')}")
 
+# ── Alias Table: every accepted spelling → canonical command key ──
+COMMAND_ALIASES = {
+    # Chrome
+    "open chrome":   "open chrome",
+    "chrome":        "open chrome",
+    # VSCode
+    "open vscode":   "open vscode",
+    "vscode":        "open vscode",
+    "vs code":       "open vscode",
+    "code":          "open vscode",
+    # WhatsApp
+    "open whatsapp": "open whatsapp",
+    "whatsapp":      "open whatsapp",
+    # Downloads
+    "open downloads":"open downloads",
+    "downloads":     "open downloads",
+    # Documents
+    "open documents":"open documents",
+    "documents":     "open documents",
+    # Shutdown
+    "shutdown pc":   "shutdown pc",
+    "shutdown":      "shutdown pc",
+    "shut down":     "shutdown pc",
+    # Restart
+    "restart pc":    "restart pc",
+    "restart":       "restart pc",
+    "reboot":        "restart pc",
+}
+
+# ── Dispatch Table: canonical command key → handler function ──
+def _handle_open_chrome():
+    subprocess.Popen(["start", "chrome"], shell=True)
+
+def _handle_open_vscode():
+    subprocess.Popen(["code"], shell=True)
+
+def _handle_open_whatsapp():
+    subprocess.Popen(["start", "whatsapp://"], shell=True)
+
+def _handle_open_downloads():
+    subprocess.Popen(["explorer", str(Path.home() / "Downloads")])
+
+def _handle_open_documents():
+    subprocess.Popen(["explorer", str(Path.home() / "Documents")])
+
+def _handle_shutdown_pc():
+    print("⚠️ DANGEROUS_ACTION: SHUTDOWN INITIATED")
+    subprocess.Popen(["shutdown", "/s", "/t", "60"])
+
+def _handle_restart_pc():
+    print("⚠️ DANGEROUS_ACTION: RESTART INITIATED")
+    subprocess.Popen(["shutdown", "/r", "/t", "60"])
+
+COMMAND_HANDLERS = {
+    "open chrome":    _handle_open_chrome,
+    "open vscode":    _handle_open_vscode,
+    "open whatsapp":  _handle_open_whatsapp,
+    "open downloads": _handle_open_downloads,
+    "open documents": _handle_open_documents,
+    "shutdown pc":    _handle_shutdown_pc,
+    "restart pc":     _handle_restart_pc,
+}
+
 @sio.on('execute_command')
 def on_execute_command(data):
-    command = data.get('command', '').lower()
-    print(f"\n📥 INCOMING DIRECTIVE: {command}")
-    
+    # ── 1. Normalise ──────────────────────────────────────────────
+    raw_cmd = data.get('command', '').strip().lower()
+    print(f"\n📥 INCOMING DIRECTIVE: {raw_cmd}")
+
+    canonical = None
+    folder_name = None
+
+    # ── 2. Special-case: parameterised "create folder <name>" ─────
+    #    Must be checked BEFORE the alias table (exact-match would miss it).
+    if raw_cmd.startswith("create folder"):
+        canonical = "create folder"
+        folder_name = raw_cmd[len("create folder"):].strip() or "New AI Folder"
+
+    elif raw_cmd.startswith("make folder"):
+        canonical = "create folder"
+        folder_name = raw_cmd[len("make folder"):].strip() or "New AI Folder"
+
+    elif raw_cmd.startswith("new folder"):
+        canonical = "create folder"
+        folder_name = raw_cmd[len("new folder"):].strip() or "New AI Folder"
+
+    else:
+        # ── 3. Alias lookup (exact match) ─────────────────────────
+        canonical = COMMAND_ALIASES.get(raw_cmd)
+
+    # ── 4. Dispatch ──────────────────────────────────────────────
     try:
-        success = False
-        # ── Application Launchers ──
-        if "open chrome" in command:
-            subprocess.Popen(["start", "chrome"], shell=True)
-            success = True
-            
-        elif "open vscode" in command:
-            subprocess.Popen(["code"], shell=True)
-            success = True
-
-        elif "open whatsapp" in command:
-            subprocess.Popen(["start", "whatsapp://"], shell=True)
-            success = True
-
-        # ── System Directories ──
-        elif "open downloads" in command:
-            path = str(Path.home() / "Downloads")
-            subprocess.Popen(["explorer", path])
-            success = True
-            
-        elif "open documents" in command:
-            path = str(Path.home() / "Documents")
-            subprocess.Popen(["explorer", path])
-            success = True
-
-        # ── Utilities ──
-        elif "create folder" in command:
-            folder_name = command.replace("create folder", "").strip()
-            if not folder_name:
-                folder_name = "New AI Folder"
+        if canonical == "create folder":
             path = Path.home() / "Desktop" / folder_name
             os.makedirs(path, exist_ok=True)
-            success = True
+            print(f"COMMAND_EXECUTED: create folder '{folder_name}'")
 
-        # ── Dangerous Actions ──
-        elif "shutdown pc" in command:
-            print("⚠️ DANGEROUS_ACTION: SHUTDOWN INITIATED")
-            subprocess.Popen(["shutdown", "/s", "/t", "60"])
-            success = True
-            
-        elif "restart pc" in command:
-            print("⚠️ DANGEROUS_ACTION: RESTART INITIATED")
-            subprocess.Popen(["shutdown", "/r", "/t", "60"])
-            success = True
+        elif canonical in COMMAND_HANDLERS:
+            COMMAND_HANDLERS[canonical]()
+            print(f"COMMAND_EXECUTED: {canonical}")
 
-        if success:
-            print("COMMAND_EXECUTED")
         else:
-            print("⚠️ EXECUTION_FAILED: UNRECOGNIZED_COMMAND")
+            print(f"EXECUTION_FAILED: UNRECOGNIZED_COMMAND '{raw_cmd}'")
 
     except Exception as e:
-        print("EXECUTION_FAILED")
-        print(f"ERROR: {str(e)}")
+        print(f"EXECUTION_FAILED: {str(e)}")
+
 
 # Heartbeat loop
 def start_heartbeat():
