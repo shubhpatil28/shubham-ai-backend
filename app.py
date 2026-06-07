@@ -377,27 +377,43 @@ def system_command():
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
         
-    data = request.get_json()
-    command = data.get('command', '').lower()
-    confirmed = data.get('confirmed', False)
-    
-    if agent_state["status"] != "online":
+    try:
+        data = request.get_json()
+        command = data.get('command', '').lower()
+        confirmed = data.get('confirmed', False)
+        
+        logger.info(f"SYSTEM_COMMAND_RECEIVED: {command}")
+        
+        is_connected = agent_state.get("status") == "online"
+        logger.info(f"LOCAL_AGENT_CONNECTED: {is_connected}")
+        
+        if not is_connected:
+            return jsonify({
+                "success": False,
+                "error": "LOCAL_AGENT_OFFLINE",
+                "message": "Local machine agent is offline. Command cannot be executed."
+            }), 200  # Return 200 with JSON payload as requested to avoid generic 503
+
+        # Relay to Agent
+        socketio.emit('execute_command', {
+            'command': command,
+            'confirmed': confirmed,
+            'timestamp': datetime.datetime.now().isoformat()
+        }, to=agent_state["sid"])
+
         return jsonify({
-            "status": "failed", 
-            "message": "Local machine agent is offline. Command cannot be executed."
-        }), 503
+            "success": True,
+            "status": "queued",
+            "message": f"Command dispatched to local machine: {command}"
+        })
 
-    # Relay to Agent
-    socketio.emit('execute_command', {
-        'command': command,
-        'confirmed': confirmed,
-        'timestamp': datetime.datetime.now().isoformat()
-    }, to=agent_state["sid"])
-
-    return jsonify({
-        "status": "pending", 
-        "message": f"Command dispatched to local machine: {command}"
-    })
+    except Exception as e:
+        logger.exception("SYSTEM_COMMAND_ROUTE_EXCEPTION")
+        return jsonify({
+            "success": False,
+            "error": "INTERNAL_SERVER_ERROR",
+            "message": str(e)
+        }), 500
 
 @app.route('/api/upload', methods=['POST', 'OPTIONS'])
 def upload_file():
