@@ -96,7 +96,7 @@ def handle_disconnect():
 @app.route("/api/agent/status")
 def agent_status():
     # Diagnostic payload
-    all_agents = list(active_agents.values())
+    all_agents = [v for v in active_agents.values() if isinstance(v, dict)]
     is_connected = len(all_agents) > 0
     
     diagnostic = {
@@ -202,7 +202,7 @@ def status():
     return jsonify({
         "status": "online",
         "system": "SHUBHAM AI OS",
-        "version": "2.0.0-AGENT",
+        "version": "3.0.0-FINAL-STABLE",
         "time": datetime.datetime.now().isoformat()
     })
 
@@ -391,7 +391,8 @@ def system_command():
         logger.info("SYSTEM_COMMAND_RECEIVED", command)
         
         # Get first available online agent
-        target_agent = next((v for v in active_agents.values() if isinstance(v, dict) and v.get("status") == "online"), None)
+        online_agents = [v for v in active_agents.values() if isinstance(v, dict) and v.get("status") == "online"]
+        target_agent = online_agents[0] if online_agents else None
         connected = target_agent is not None
         logger.info("LOCAL_AGENT_CONNECTED", connected)
         
