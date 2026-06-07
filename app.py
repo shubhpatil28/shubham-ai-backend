@@ -40,18 +40,12 @@ socketio = SocketIO(
     logger=True,
     engineio_logger=True,
     allow_upgrades=True,
-    ping_timeout=60,
+    ping_timeout=120,
     ping_interval=25
 )
 
-# Global state for connected agent
-agent_state = {
-    "status": "offline",
-    "last_heartbeat": None,
-    "sid": None,
-    "device_id": None,
-    "platform": None
-}
+# Robust state for connected agents
+active_agents = {}
 
 # ══════════════════════════════════════════════════════════════
 # SocketIO Events for Agent
@@ -59,49 +53,55 @@ agent_state = {
 
 @socketio.on('connect')
 def handle_connect():
-    print(f"🔌 CLIENT_CONNECTED: sid={request.sid}")
-    logger.info(f"Client connected: {request.sid}")
+    logger.info(f"CLIENT_CONNECTED: sid={request.sid}")
 
 @socketio.on('agent_login')
 def handle_agent_login(data):
-    agent_state["status"] = "online"
-    agent_state["sid"] = request.sid
-    agent_state["last_heartbeat"] = datetime.datetime.now().isoformat()
-    agent_state["device_id"] = data.get("device_id")
-    agent_state["platform"] = data.get("platform")
-    print(f"✅ AGENT_REGISTERED: sid={request.sid} device={data.get('device_id')} platform={data.get('platform')}")
-    logger.info(f"Local Agent registered: {request.sid}")
+    agent_id = data.get("device_id", "unknown_agent")
+    active_agents[agent_id] = {
+        "sid": request.sid,
+        "status": "online",
+        "last_heartbeat": datetime.datetime.now().isoformat(),
+        "platform": data.get("platform"),
+        "device_id": agent_id
+    }
+    # Map SID back to agent_id for cleanup
+    active_agents[request.sid] = agent_id
+    
+    logger.info(f"AGENT_REGISTERED: agent_id={agent_id} sid={request.sid}")
     emit('login_success', {'status': 'authenticated'})
 
 @socketio.on('heartbeat')
 def handle_heartbeat(data):
-    agent_state["last_heartbeat"] = datetime.datetime.now().isoformat()
-    agent_state["status"] = "online"
-    print(f"💓 HEARTBEAT: sid={request.sid} time={agent_state['last_heartbeat']}")
+    agent_id = active_agents.get(request.sid)
+    if agent_id and agent_id in active_agents:
+        active_agents[agent_id]["last_heartbeat"] = datetime.datetime.now().isoformat()
+        active_agents[agent_id]["status"] = "online"
+        logger.info(f"AGENT_HEARTBEAT: agent_id={agent_id}")
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print(f"❌ CLIENT_DISCONNECTED: sid={request.sid}")
-    if request.sid == agent_state["sid"]:
-        agent_state["status"] = "offline"
-        agent_state["sid"] = None
-        agent_state["device_id"] = None
-        agent_state["platform"] = None
-        print("⚠️ AGENT_OFFLINE: Local machine agent disconnected.")
-    logger.info(f"Client disconnected: {request.sid}")
+    agent_id = active_agents.pop(request.sid, None)
+    if agent_id and agent_id in active_agents:
+        active_agents.pop(agent_id)
+        logger.info(f"AGENT_DISCONNECTED: agent_id={agent_id}")
+    logger.info(f"CLIENT_DISCONNECTED: sid={request.sid}")
 
 @app.route("/api/agent/status")
 def agent_status():
     # Diagnostic payload
+    all_agents = [v for k, v in active_agents.items() if isinstance(k, str) and k != v]
+    is_connected = len(all_agents) > 0
+    
     diagnostic = {
         "worker_pid": os.getpid(),
-        "connected": agent_state.get("status") == "online",
+        "connected": is_connected,
+        "agents_count": len(all_agents),
+        "agents": all_agents,
         "timestamp": datetime.datetime.now().isoformat()
     }
-    # Merge diagnostic info into the global state response
-    response = {**agent_state, **diagnostic}
-    logger.info(f"/api/agent/status accessed – pid={os.getpid()}, status={agent_state.get('status')}")
-    return jsonify(response)
+    logger.info(f"/api/agent/status accessed – pid={os.getpid()}, connected={is_connected}")
+    return jsonify(diagnostic)
 
 # ══════════════════════════════════════════════════════════════
 # 2. CONFIGURATION & CORS (ENTERPRISE STABILIZATION)
@@ -384,7 +384,9 @@ def system_command():
         
         logger.info("SYSTEM_COMMAND_RECEIVED", command)
         
-        connected = agent_state.get("status") == "online"
+        # Get first available online agent
+        target_agent = next((v for k, v in active_agents.items() if isinstance(k, str) and v.get("status") == "online"), None)
+        connected = target_agent is not None
         logger.info("LOCAL_AGENT_CONNECTED", connected)
         
         if not connected:
@@ -392,15 +394,16 @@ def system_command():
                 "success": False,
                 "error": "LOCAL_AGENT_OFFLINE",
                 "message": "Local machine agent is offline. Command cannot be executed."
-            }), 200  # Return 200 with JSON payload as requested to avoid generic 503
+            }), 200
 
         # Relay to Agent
         socketio.emit('execute_command', {
             'command': command,
             'confirmed': confirmed,
             'timestamp': datetime.datetime.now().isoformat()
-        }, to=agent_state["sid"])
+        }, to=target_agent["sid"])
 
+        logger.info("COMMAND_DISPATCHED", command)
         return jsonify({
             "success": True,
             "status": "queued",

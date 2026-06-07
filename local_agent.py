@@ -104,7 +104,7 @@ def on_execute_command(data):
             success = True
 
         if success:
-            print("EXECUTION_SUCCESS")
+            print("COMMAND_EXECUTED")
         else:
             print("⚠️ EXECUTION_FAILED: UNRECOGNIZED_COMMAND")
 
@@ -127,17 +127,25 @@ if __name__ == "__main__":
     if test_mode:
         print("🧪 TEST MODE ACTIVE: AGENT WILL CONNECT AND WAIT FOR COMMANDS")
 
-    # Reconnection loop
+    # Reconnection loop with exponential backoff and stable timeouts
+    reconnect_delay = 5
+    max_delay = 60
+    
     while True:
         try:
             if not sio.connected:
+                print(f"🔄 ATTEMPTING_CONNECTION: {API_URL} (Delay: {reconnect_delay}s)")
                 sio.connect(
                     API_URL,
                     transports=["polling"],
-                    wait_timeout=30,
+                    wait_timeout=60,
                     headers={"Origin": "https://shubham-ai-os-fronted.vercel.app"}
                 )
-            sio.wait()
+                reconnect_delay = 5 # Reset on success
+                sio.wait()
+            else:
+                sio.wait()
         except Exception as e:
             print(f"❌ Connection error: {e}")
-            time.sleep(10)
+            time.sleep(reconnect_delay)
+            reconnect_delay = min(reconnect_delay * 2, max_delay)
