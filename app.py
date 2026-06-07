@@ -46,6 +46,7 @@ socketio = SocketIO(
 
 # Robust state for connected agents
 active_agents = {}
+sid_to_agent = {}
 
 # ══════════════════════════════════════════════════════════════
 # SocketIO Events for Agent
@@ -65,15 +66,15 @@ def handle_agent_login(data):
         "platform": data.get("platform"),
         "device_id": agent_id
     }
-    # Map SID back to agent_id for cleanup
-    active_agents[request.sid] = agent_id
+    # Store SID mapping separately to keep active_agents registry clean
+    sid_to_agent[request.sid] = agent_id
     
     logger.info(f"AGENT_REGISTERED: agent_id={agent_id} sid={request.sid}")
     emit('login_success', {'status': 'authenticated'})
 
 @socketio.on('heartbeat')
 def handle_heartbeat(data):
-    agent_id = active_agents.get(request.sid)
+    agent_id = sid_to_agent.get(request.sid)
     if agent_id and agent_id in active_agents:
         active_agents[agent_id]["last_heartbeat"] = datetime.datetime.now().isoformat()
         active_agents[agent_id]["status"] = "online"
@@ -82,7 +83,7 @@ def handle_heartbeat(data):
 @socketio.on('disconnect')
 def handle_disconnect():
     sid = request.sid
-    agent_id = active_agents.pop(sid, None)
+    agent_id = sid_to_agent.pop(sid, None)
     if agent_id and agent_id in active_agents:
         # Only remove the agent if the disconnecting SID is the CURRENT one for that agent
         if active_agents[agent_id].get("sid") == sid:
@@ -95,7 +96,7 @@ def handle_disconnect():
 @app.route("/api/agent/status")
 def agent_status():
     # Diagnostic payload
-    all_agents = [v for k, v in active_agents.items() if isinstance(k, str) and k != v]
+    all_agents = list(active_agents.values())
     is_connected = len(all_agents) > 0
     
     diagnostic = {
@@ -390,7 +391,7 @@ def system_command():
         logger.info("SYSTEM_COMMAND_RECEIVED", command)
         
         # Get first available online agent
-        target_agent = next((v for k, v in active_agents.items() if isinstance(k, str) and v.get("status") == "online"), None)
+        target_agent = next((v for v in active_agents.values() if isinstance(v, dict) and v.get("status") == "online"), None)
         connected = target_agent is not None
         logger.info("LOCAL_AGENT_CONNECTED", connected)
         
@@ -406,7 +407,7 @@ def system_command():
             'command': command,
             'confirmed': confirmed,
             'timestamp': datetime.datetime.now().isoformat()
-        }, to=target_agent["sid"])
+        }, room=target_agent["sid"], namespace='/')
 
         logger.info("COMMAND_DISPATCHED", command)
         return jsonify({
