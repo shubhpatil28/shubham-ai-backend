@@ -69,6 +69,9 @@ def handle_agent_login(data):
     # Store SID mapping separately to keep active_agents registry clean
     sid_to_agent[request.sid] = agent_id
     
+    print("AGENT_LOGIN_RECEIVED", request.sid, data)
+    print("ACTIVE_AGENTS_AFTER_LOGIN", active_agents)
+    
     logger.info(f"AGENT_LOGIN_RECEIVED: sid={request.sid} data={data}")
     logger.info(f"ACTIVE_AGENTS_AFTER_LOGIN: {active_agents}")
     
@@ -81,6 +84,7 @@ def handle_heartbeat(data):
     if agent_id and agent_id in active_agents:
         active_agents[agent_id]["last_heartbeat"] = datetime.datetime.now().isoformat()
         active_agents[agent_id]["status"] = "online"
+        print("HEARTBEAT_RECEIVED", request.sid)
         logger.info(f"HEARTBEAT_RECEIVED: sid={request.sid} agent_id={agent_id}")
         logger.info(f"AGENT_HEARTBEAT: agent_id={agent_id}")
 
@@ -92,6 +96,8 @@ def handle_disconnect():
         # Only remove the agent if the disconnecting SID is the CURRENT one for that agent
         if active_agents[agent_id].get("sid") == sid:
             active_agents.pop(agent_id)
+            print("DISCONNECT_RECEIVED", request.sid)
+            print("ACTIVE_AGENTS_AFTER_DISCONNECT", active_agents)
             logger.info(f"AGENT_DISCONNECTED: sid={sid} agent_id={agent_id}")
             logger.info(f"ACTIVE_AGENTS_AFTER_DISCONNECT: {active_agents}")
         else:
@@ -100,6 +106,7 @@ def handle_disconnect():
 
 @app.route("/api/agent/status")
 def agent_status():
+    print("AGENT_STATUS_CALLED", active_agents)
     # Diagnostic payload
     all_agents = [v for v in active_agents.values() if isinstance(v, dict)]
     is_connected = len(all_agents) > 0

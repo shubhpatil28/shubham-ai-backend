@@ -39,6 +39,8 @@ def print_diagnostics():
 
 @sio.event
 def connect():
+    print("CONNECT_EVENT_TRIGGERED")
+    print("SOCKET_SID", sio.sid)
     print(f"CONNECT_EVENT_TRIGGERED: sid={sio.sid}")
     print("\n✅ CONNECTED TO SHUBHAM AI CLOUD BACKEND")
     print("✅ LISTENING FOR DIRECTIVES")
@@ -62,6 +64,7 @@ def disconnect():
 
 @sio.on('login_success')
 def on_login_success(data):
+    print("LOGIN_SUCCESS_RECEIVED")
     print(f"🔐 AUTHENTICATION_SUCCESS: {data.get('status')}")
 
 # ── Alias Table: every accepted spelling → canonical command key ──
@@ -224,8 +227,8 @@ def start_heartbeat():
         try:
             if sio.connected:
                 sio.emit('heartbeat', {})
-                print("AGENT_HEARTBEAT_SENT")
                 print("HEARTBEAT_SENT")
+                print("AGENT_HEARTBEAT_SENT")
         except Exception as hb_err:
             print(f"HEARTBEAT_ERROR: {hb_err}")
 
