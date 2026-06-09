@@ -223,8 +223,9 @@ def status():
     return jsonify({
         "status": "online",
         "system": "SHUBHAM AI OS",
-        "version": "4.0.4-FINAL",
-        "time": datetime.datetime.now().isoformat()
+        "version": "4.0.5-DIAGNOSTIC",
+        "pid": os.getpid(),
+        "time": datetime.datetime.utcnow().isoformat()
     })
 
 @app.route("/api/chat", methods=["POST", "OPTIONS"])
