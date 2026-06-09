@@ -35,7 +35,7 @@ ALLOWED_ORIGINS = [
 
 socketio = SocketIO(
     app,
-    cors_allowed_origins=ALLOWED_ORIGINS,
+    cors_allowed_origins="*",
     async_mode='eventlet',
     logger=True,
     engineio_logger=True,
