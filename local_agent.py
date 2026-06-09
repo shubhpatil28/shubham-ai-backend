@@ -5,6 +5,7 @@ import time
 import sys
 import platform
 import uuid
+import webbrowser
 from pathlib import Path
 
 # ── SHUBHAM AI OS — Local Machine Agent ──
@@ -82,20 +83,65 @@ COMMAND_ALIASES = {
 }
 
 # ── Dispatch Table: canonical command key → handler function ──
+# NOTE: 'start' is a CMD built-in and cannot be called via subprocess list.
+# Use os.startfile() for registered Win32 apps, webbrowser for URLs.
+
 def _handle_open_chrome():
-    subprocess.Popen(["start", "chrome"], shell=True)
+    print("AGENT_CHROME_HANDLER_ENTERED")
+    # Try the direct executable first, fall back to webbrowser
+    chrome_paths = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    ]
+    launched = False
+    for path in chrome_paths:
+        if os.path.exists(path):
+            print(f"AGENT_SUBPROCESS_LAUNCH: {path}")
+            subprocess.Popen([path])
+            launched = True
+            break
+    if not launched:
+        print("AGENT_CHROME_PATH_NOT_FOUND: falling back to webbrowser")
+        webbrowser.open("https://google.com")
+    print("AGENT_SUBPROCESS_SUCCESS: open chrome")
 
 def _handle_open_vscode():
-    subprocess.Popen(["code"], shell=True)
+    # 'code' is on PATH when VS Code is installed with shell integration
+    vscode_paths = [
+        str(Path.home() / "AppData" / "Local" / "Programs" / "Microsoft VS Code" / "Code.exe"),
+        r"C:\Program Files\Microsoft VS Code\Code.exe",
+    ]
+    launched = False
+    for path in vscode_paths:
+        if os.path.exists(path):
+            subprocess.Popen([path])
+            launched = True
+            break
+    if not launched:
+        # Fallback: try 'code' on PATH
+        try:
+            subprocess.Popen(["code"], shell=True)
+            launched = True
+        except Exception:
+            pass
+    if not launched:
+        raise RuntimeError("VS Code not found")
 
 def _handle_open_whatsapp():
-    subprocess.Popen(["start", "whatsapp://"], shell=True)
+    # WhatsApp Desktop registers the whatsapp:// URI handler via os.startfile
+    try:
+        os.startfile("whatsapp://")
+    except Exception:
+        # Fallback: open WhatsApp Web
+        webbrowser.open("https://web.whatsapp.com")
 
 def _handle_open_downloads():
-    subprocess.Popen(["explorer", str(Path.home() / "Downloads")])
+    path = str(Path.home() / "Downloads")
+    os.startfile(path)
 
 def _handle_open_documents():
-    subprocess.Popen(["explorer", str(Path.home() / "Documents")])
+    path = str(Path.home() / "Documents")
+    os.startfile(path)
 
 def _handle_shutdown_pc():
     print("⚠️ DANGEROUS_ACTION: SHUTDOWN INITIATED")
