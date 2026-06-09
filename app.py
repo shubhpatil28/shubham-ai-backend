@@ -20,6 +20,19 @@ import traceback
 # ══════════════════════════════════════════════════════════════
 print(f"PROCESS_START PID={os.getpid()}")
 
+def signal_handler(signum, frame):
+    print(f"SIGNAL_RECEIVED {signum}")
+
+# Register handlers for termination and interrupt signals
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
+
+# Attempt to catch Gunicorn's timeout alarm if supported
+try:
+    signal.signal(signal.SIGALRM, signal_handler)
+except Exception:
+    pass
+
 def on_exit():
     print(f"PROCESS_EXIT PID={os.getpid()}")
 atexit.register(on_exit)
@@ -241,7 +254,7 @@ def status():
     return jsonify({
         "status": "online",
         "system": "SHUBHAM AI OS",
-        "version": "4.0.6-FORENSIC",
+        "version": "4.0.7-FORENSIC-V2",
         "pid": os.getpid(),
         "time": datetime.datetime.utcnow().isoformat()
     })
