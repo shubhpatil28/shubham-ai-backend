@@ -207,7 +207,7 @@ def status():
     return jsonify({
         "status": "online",
         "system": "SHUBHAM AI OS",
-        "version": "3.0.0-FINAL-STABLE",
+        "version": "4.0.0-DEBUG",
         "time": datetime.datetime.now().isoformat()
     })
 

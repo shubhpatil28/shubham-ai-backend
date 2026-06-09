@@ -39,6 +39,7 @@ def print_diagnostics():
 
 @sio.event
 def connect():
+    print("CONNECT_EVENT_TRIGGERED")
     print("\n✅ CONNECTED TO SHUBHAM AI CLOUD BACKEND")
     print("✅ LISTENING FOR DIRECTIVES")
     # Emit authentication / registration
@@ -47,6 +48,7 @@ def connect():
         'device_id': DEVICE_ID,
         'platform': platform.system()
     })
+    print("AGENT_LOGIN_EMITTED")
 
 @sio.event
 def connect_error(data):
@@ -54,6 +56,7 @@ def connect_error(data):
 
 @sio.event
 def disconnect():
+    print("DISCONNECT_EVENT_TRIGGERED")
     print("\n❌ DISCONNECTED FROM BACKEND")
     print("🔄 STANDBY: ATTEMPTING RECONNECTION...")
 
@@ -222,6 +225,7 @@ def start_heartbeat():
             if sio.connected:
                 sio.emit('heartbeat', {})
                 print("AGENT_HEARTBEAT_SENT")
+                print("HEARTBEAT_SENT")
         except Exception as hb_err:
             print(f"HEARTBEAT_ERROR: {hb_err}")
 
