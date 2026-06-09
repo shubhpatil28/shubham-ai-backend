@@ -11,8 +11,26 @@ import subprocess
 from pathlib import Path
 from groq import Groq
 
+import atexit
+import signal
+import traceback
+
 # ══════════════════════════════════════════════════════════════
-# 1. STARTUP LOGGING
+# 1. FORENSIC DIAGNOSTICS & LIFECYCLE HOOKS
+# ══════════════════════════════════════════════════════════════
+print(f"PROCESS_START PID={os.getpid()}")
+
+def on_exit():
+    print(f"PROCESS_EXIT PID={os.getpid()}")
+atexit.register(on_exit)
+
+def global_exception(exc_type, exc_value, exc_tb):
+    print("UNHANDLED_EXCEPTION_INITIATED")
+    traceback.print_exception(exc_type, exc_value, exc_tb)
+sys.excepthook = global_exception
+
+# ══════════════════════════════════════════════════════════════
+# 2. STARTUP LOGGING & CONFIGURATION
 # ══════════════════════════════════════════════════════════════
 print("🚀 SHUBHAM AI OS Backend Starting...")
 
@@ -223,7 +241,7 @@ def status():
     return jsonify({
         "status": "online",
         "system": "SHUBHAM AI OS",
-        "version": "4.0.5-DIAGNOSTIC",
+        "version": "4.0.6-FORENSIC",
         "pid": os.getpid(),
         "time": datetime.datetime.utcnow().isoformat()
     })
