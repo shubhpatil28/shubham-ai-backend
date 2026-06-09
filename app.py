@@ -69,6 +69,9 @@ def handle_agent_login(data):
     # Store SID mapping separately to keep active_agents registry clean
     sid_to_agent[request.sid] = agent_id
     
+    logger.info(f"AGENT_LOGIN_RECEIVED: sid={request.sid} data={data}")
+    logger.info(f"ACTIVE_AGENTS_AFTER_LOGIN: {active_agents}")
+    
     logger.info(f"AGENT_REGISTERED: agent_id={agent_id} sid={request.sid}")
     emit('login_success', {'status': 'authenticated'})
 
@@ -78,6 +81,7 @@ def handle_heartbeat(data):
     if agent_id and agent_id in active_agents:
         active_agents[agent_id]["last_heartbeat"] = datetime.datetime.now().isoformat()
         active_agents[agent_id]["status"] = "online"
+        logger.info(f"HEARTBEAT_RECEIVED: sid={request.sid} agent_id={agent_id}")
         logger.info(f"AGENT_HEARTBEAT: agent_id={agent_id}")
 
 @socketio.on('disconnect')
@@ -88,7 +92,8 @@ def handle_disconnect():
         # Only remove the agent if the disconnecting SID is the CURRENT one for that agent
         if active_agents[agent_id].get("sid") == sid:
             active_agents.pop(agent_id)
-            logger.info(f"AGENT_DISCONNECTED: agent_id={agent_id}")
+            logger.info(f"AGENT_DISCONNECTED: sid={sid} agent_id={agent_id}")
+            logger.info(f"ACTIVE_AGENTS_AFTER_DISCONNECT: {active_agents}")
         else:
             logger.info(f"STALE_DISCONNECT_IGNORED: agent_id={agent_id} sid={sid}")
     logger.info(f"CLIENT_DISCONNECTED: sid={sid}")
