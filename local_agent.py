@@ -6,6 +6,7 @@ import sys
 import platform
 import uuid
 import webbrowser
+import threading
 from pathlib import Path
 
 # ── SHUBHAM AI OS — Local Machine Agent ──
@@ -16,7 +17,14 @@ from pathlib import Path
 API_URL = "https://shubham-ai-backend.onrender.com"
 DEVICE_ID = str(uuid.getnode())
 
-sio = socketio.Client(reconnection=True, reconnection_attempts=0, reconnection_delay=5, reconnection_delay_max=30, logger=True, engineio_logger=True)
+# reconnection=False: the manual while-True loop below is the ONLY reconnect
+# path. Built-in auto-reconnect must be OFF so agent_login is always
+# re-emitted after every connect(), keeping the backend registry current.
+sio = socketio.Client(
+    reconnection=False,
+    logger=True,
+    engineio_logger=True
+)
 
 def print_diagnostics():
     print("=================================")
@@ -206,40 +214,61 @@ def on_execute_command(data):
         print(f"EXECUTION_FAILED: {str(e)}")
 
 
-# Heartbeat loop
+# Heartbeat loop — runs in a daemon thread so it never blocks the main loop
 def start_heartbeat():
     while True:
-        if sio.connected:
-            sio.emit('heartbeat', {})
         time.sleep(20)
+        try:
+            if sio.connected:
+                sio.emit('heartbeat', {})
+                print("AGENT_HEARTBEAT_SENT")
+        except Exception as hb_err:
+            print(f"HEARTBEAT_ERROR: {hb_err}")
 
 if __name__ == "__main__":
     test_mode = "--test" in sys.argv
-    
+
     print_diagnostics()
-    
+
     if test_mode:
         print("🧪 TEST MODE ACTIVE: AGENT WILL CONNECT AND WAIT FOR COMMANDS")
 
-    # Reconnection loop with exponential backoff and stable timeouts
+    # ── Start heartbeat in background BEFORE the connect loop ──────
+    hb_thread = threading.Thread(target=start_heartbeat, daemon=True)
+    hb_thread.start()
+    print("HEARTBEAT_THREAD_STARTED")
+
+    # ── Manual reconnect loop with exponential backoff ─────────────
+    # reconnection=False on the client ensures THIS loop is the only
+    # reconnect path. Every iteration re-emits agent_login via the
+    # connect() handler, keeping the backend registry clean.
     reconnect_delay = 5
     max_delay = 60
-    
+
     while True:
         try:
-            if not sio.connected:
-                print(f"🔄 ATTEMPTING_CONNECTION: {API_URL} (Delay: {reconnect_delay}s)")
-                sio.connect(
-                    API_URL,
-                    transports=["polling"],
-                    wait_timeout=60,
-                    headers={"Origin": "https://shubham-ai-os-fronted.vercel.app"}
-                )
-                reconnect_delay = 5 # Reset on success
-                sio.wait()
-            else:
-                sio.wait()
+            print(f"🔄 ATTEMPTING_CONNECTION: {API_URL}")
+            sio.connect(
+                API_URL,
+                # websocket first — persistent TCP avoids Render's 30s HTTP
+                # idle timeout that kills pure polling sessions.
+                # Falls back to polling automatically if websocket unavailable.
+                transports=["websocket", "polling"],
+                wait_timeout=30,
+                headers={"Origin": "https://shubham-ai-os-fronted.vercel.app"}
+            )
+            reconnect_delay = 5  # reset on successful connect
+            print("CONNECTION_ESTABLISHED: entering wait loop")
+            sio.wait()  # blocks until disconnect
         except Exception as e:
             print(f"❌ Connection error: {e}")
-            time.sleep(reconnect_delay)
-            reconnect_delay = min(reconnect_delay * 2, max_delay)
+        finally:
+            # Always clean up before retrying
+            try:
+                sio.disconnect()
+            except Exception:
+                pass
+
+        print(f"🔄 RECONNECTING in {reconnect_delay}s...")
+        time.sleep(reconnect_delay)
+        reconnect_delay = min(reconnect_delay * 2, max_delay)
