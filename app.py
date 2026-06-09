@@ -58,7 +58,14 @@ def handle_connect():
 
 @socketio.on('agent_login')
 def handle_agent_login(data):
-    agent_id = data.get("device_id", "unknown_agent")
+    agent_id = data.get("device_id", "nexus_windows")
+    
+    # 1. Clear any old SIDs associated with this agent_id (prevents stale registry entries)
+    for sid, aid in list(sid_to_agent.items()):
+        if aid == agent_id:
+            sid_to_agent.pop(sid, None)
+            
+    # 2. Register current connection
     active_agents[agent_id] = {
         "sid": request.sid,
         "status": "online",
@@ -66,14 +73,10 @@ def handle_agent_login(data):
         "platform": data.get("platform"),
         "device_id": agent_id
     }
-    # Store SID mapping separately to keep active_agents registry clean
     sid_to_agent[request.sid] = agent_id
     
     print("LOGIN_PID", os.getpid())
     print("AGENT_LOGIN_RECEIVED", request.sid, data)
-    
-    logger.info(f"AGENT_LOGIN_RECEIVED: sid={request.sid} data={data}")
-    logger.info(f"ACTIVE_AGENTS_AFTER_LOGIN: {active_agents}")
     print("ACTIVE_AGENTS_AFTER_LOGIN", active_agents)
     
     logger.info(f"AGENT_REGISTERED: agent_id={agent_id} sid={request.sid}")
@@ -96,6 +99,7 @@ def handle_disconnect():
     print("DISCONNECT_PID", os.getpid())
     print("DISCONNECT_RECEIVED", request.sid)
     print("ACTIVE_AGENTS_BEFORE_DISCONNECT", active_agents)
+    
     agent_id = sid_to_agent.pop(sid, None)
     if agent_id and agent_id in active_agents:
         # Only remove the agent if the disconnecting SID is the CURRENT one for that agent
@@ -103,7 +107,6 @@ def handle_disconnect():
             active_agents.pop(agent_id)
             print("ACTIVE_AGENTS_AFTER_DISCONNECT", active_agents)
             logger.info(f"AGENT_DISCONNECTED: sid={sid} agent_id={agent_id}")
-            logger.info(f"ACTIVE_AGENTS_AFTER_DISCONNECT: {active_agents}")
         else:
             logger.info(f"STALE_DISCONNECT_IGNORED: agent_id={agent_id} sid={sid}")
     logger.info(f"CLIENT_DISCONNECTED: sid={sid}")
