@@ -39,7 +39,7 @@ def print_diagnostics():
 
 @sio.event
 def connect():
-    print("CONNECT_EVENT_TRIGGERED")
+    print(f"CONNECT_EVENT_TRIGGERED: sid={sio.sid}")
     print("\n✅ CONNECTED TO SHUBHAM AI CLOUD BACKEND")
     print("✅ LISTENING FOR DIRECTIVES")
     # Emit authentication / registration
@@ -252,24 +252,24 @@ if __name__ == "__main__":
     while True:
         try:
             print(f"🔄 ATTEMPTING_CONNECTION: {API_URL}")
+            # WebSocket is mandatory for stability on Render free tier.
+            # Polling is too fragile (5s timeouts).
             sio.connect(
                 API_URL,
-                # websocket first — persistent TCP avoids Render's 30s HTTP
-                # idle timeout that kills pure polling sessions.
-                # Falls back to polling automatically if websocket unavailable.
                 transports=["websocket", "polling"],
-                wait_timeout=30,
+                wait_timeout=60, # Increased for slow Render startup
                 headers={"Origin": "https://shubham-ai-os-fronted.vercel.app"}
             )
             reconnect_delay = 5  # reset on successful connect
-            print("CONNECTION_ESTABLISHED: entering wait loop")
+            print(f"CONNECTION_ESTABLISHED: sid={sio.sid} entering wait loop")
             sio.wait()  # blocks until disconnect
         except Exception as e:
             print(f"❌ Connection error: {e}")
         finally:
             # Always clean up before retrying
             try:
-                sio.disconnect()
+                if sio.connected:
+                    sio.disconnect()
             except Exception:
                 pass
 
