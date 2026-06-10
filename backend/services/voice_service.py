@@ -1,6 +1,5 @@
 import os
 import time
-import asyncio
 import threading
 import tempfile
 import re
@@ -189,70 +188,74 @@ class VoiceService:
             
         return ""
 
-    async def listen_loop(self, chat_callback):
-        """Asynchronous background loop listening for 'Hey Buddy' wake word and user commands."""
+    def listen_loop(self, chat_callback):
+        """Synchronous background loop listening for 'Hey Buddy' wake word and user commands.
+        Runs entirely on a plain thread — no asyncio, safe under Gunicorn/Eventlet.
+        """
         self.is_listening = True
         print("[Voice Assistant listening in background... Say 'Hey Buddy' to activate]")
         
         while self.is_listening:
-            # Run blocking mic listening in an executor thread
-            loop = asyncio.get_event_loop()
-            audio = await loop.run_in_executor(None, self.listen_mic)
-            
-            if not audio:
-                # Check for timeout if active session is on
-                if self.active_session and (time.time() - self.last_active_time > self.session_timeout):
-                    print("[Active session timed out. Returning to wake word mode]")
-                    self.active_session = False
-                continue
+            try:
+                audio = self.listen_mic()
                 
-            text = await loop.run_in_executor(None, self.transcribe_audio, audio)
-            if not text:
-                continue
-                
-            print(f"[Transcribed]: {text}")
-            
-            # Check for wake word or session activity
-            clean_text = text.lower()
-            
-            # Match "hey buddy" or "buddy"
-            wake_word_detected = self.wake_word in clean_text or "hey buddy" in clean_text or "hello buddy" in clean_text
-            
-            if wake_word_detected or self.active_session:
-                self.last_active_time = time.time()
-                
-                # If wake word is detected, extract the command after the wake word if any
-                command = text
-                if wake_word_detected:
-                    self.active_session = True
-                    # Remove the wake word from command
-                    # regex to match wake words
-                    command = re.sub(r'(hey\s+buddy|hello\s+buddy|buddy)', '', text, flags=re.IGNORECASE).strip()
+                if not audio:
+                    # Check for timeout if active session is on
+                    if self.active_session and (time.time() - self.last_active_time > self.session_timeout):
+                        print("[Active session timed out. Returning to wake word mode]")
+                        self.active_session = False
+                    continue
                     
-                    if not command:
-                        # User just said the wake word
-                        self.speak("हो, बोल मित्रा! I am listening. What can I do for you today?")
-                        continue
+                text = self.transcribe_audio(audio)
+                if not text:
+                    continue
+                    
+                print(f"[Transcribed]: {text}")
                 
-                print(f"[Processing Command]: {command}")
-                # Execute chat callback
-                response = await chat_callback(command)
+                # Check for wake word or session activity
+                clean_text = text.lower()
                 
-                # Speak response
-                if response:
-                    await loop.run_in_executor(None, self.speak, response)
-            else:
-                print(f"[Ignored (No wake word detected)]: {text}")
+                # Match "hey buddy" or "buddy"
+                wake_word_detected = self.wake_word in clean_text or "hey buddy" in clean_text or "hello buddy" in clean_text
+                
+                if wake_word_detected or self.active_session:
+                    self.last_active_time = time.time()
+                    
+                    # If wake word is detected, extract the command after the wake word if any
+                    command = text
+                    if wake_word_detected:
+                        self.active_session = True
+                        # Remove the wake word from command
+                        command = re.sub(r'(hey\s+buddy|hello\s+buddy|buddy)', '', text, flags=re.IGNORECASE).strip()
+                        
+                        if not command:
+                            # User just said the wake word
+                            self.speak("हो, बोल मित्रा! I am listening. What can I do for you today?")
+                            continue
+                    
+                    print(f"[Processing Command]: {command}")
+                    # Execute chat callback (must be a regular function, not a coroutine)
+                    response = chat_callback(command)
+                    
+                    # Speak response
+                    if response:
+                        self.speak(response)
+                else:
+                    print(f"[Ignored (No wake word detected)]: {text}")
+            except Exception as e:
+                print(f"[Voice Loop Error]: {e}")
+                time.sleep(1)  # Prevent tight error loops
 
     def start_background_thread(self, chat_callback):
-        """Starts the voice assistant in a separate background thread."""
-        def run_async_loop():
-            # Setup new event loop for this thread
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(self.listen_loop(chat_callback))
-            
-        thread = threading.Thread(target=run_async_loop, daemon=True)
+        """Starts the voice assistant in a plain daemon thread.
+        No asyncio — fully compatible with Gunicorn/Eventlet.
+        """
+        thread = threading.Thread(
+            target=self.listen_loop,
+            args=(chat_callback,),
+            daemon=True,
+            name="VoiceListenerThread"
+        )
         thread.start()
-        print("[Voice Engine thread started successfully]")
+        print("[Voice Engine thread started successfully (sync mode)]")
         return thread
