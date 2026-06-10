@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 import socketio
 import subprocess
 import os
@@ -177,30 +178,36 @@ COMMAND_HANDLERS = {
 
 @sio.on('execute_command')
 def on_execute_command(data):
+    import re
     # ── 1. Normalise ──────────────────────────────────────────────
-    raw_cmd = data.get('command', '').strip().lower()
+    raw_cmd = data.get('command', '')
     print(f"\n📥 INCOMING DIRECTIVE: {raw_cmd}")
+
+    command = raw_cmd.lower().strip()
+    command = re.sub(r'[^\w\s-]', '', command)
+    command = re.sub(r'\s+', ' ', command)
+    print(f"NORMALIZED_COMMAND: {command}")
 
     canonical = None
     folder_name = None
 
     # ── 2. Special-case: parameterised "create folder <name>" ─────
     #    Must be checked BEFORE the alias table (exact-match would miss it).
-    if raw_cmd.startswith("create folder"):
+    if command.startswith("create folder"):
         canonical = "create folder"
-        folder_name = raw_cmd[len("create folder"):].strip() or "New AI Folder"
+        folder_name = command[len("create folder"):].strip() or "New AI Folder"
 
-    elif raw_cmd.startswith("make folder"):
+    elif command.startswith("make folder"):
         canonical = "create folder"
-        folder_name = raw_cmd[len("make folder"):].strip() or "New AI Folder"
+        folder_name = command[len("make folder"):].strip() or "New AI Folder"
 
-    elif raw_cmd.startswith("new folder"):
+    elif command.startswith("new folder"):
         canonical = "create folder"
-        folder_name = raw_cmd[len("new folder"):].strip() or "New AI Folder"
+        folder_name = command[len("new folder"):].strip() or "New AI Folder"
 
     else:
         # ── 3. Alias lookup (exact match) ─────────────────────────
-        canonical = COMMAND_ALIASES.get(raw_cmd)
+        canonical = COMMAND_ALIASES.get(command)
 
     # ── 4. Dispatch ──────────────────────────────────────────────
     try:
@@ -214,7 +221,7 @@ def on_execute_command(data):
             print(f"COMMAND_EXECUTED: {canonical}")
 
         else:
-            print(f"EXECUTION_FAILED: UNRECOGNIZED_COMMAND '{raw_cmd}'")
+            print(f"EXECUTION_FAILED: UNRECOGNIZED_COMMAND '{command}'")
 
     except Exception as e:
         print(f"EXECUTION_FAILED: {str(e)}")
@@ -259,8 +266,8 @@ if __name__ == "__main__":
             # Polling is too fragile (5s timeouts).
             sio.connect(
                 API_URL,
-                transports=["websocket", "polling"],
-                wait_timeout=60, # Increased for slow Render startup
+                transports=["polling", "websocket"],
+                wait_timeout=60,
                 headers={"Origin": "https://shubham-ai-os-fronted.vercel.app"}
             )
             reconnect_delay = 5  # reset on successful connect
