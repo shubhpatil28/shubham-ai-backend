@@ -40,11 +40,7 @@ def print_diagnostics():
 
 @sio.event
 def connect():
-    print("CONNECT_EVENT_TRIGGERED")
-    print("SOCKET_SID", sio.sid)
-    print(f"CONNECT_EVENT_TRIGGERED: sid={sio.sid}")
-    print("\n✅ CONNECTED TO SHUBHAM AI CLOUD BACKEND")
-    print("✅ LISTENING FOR DIRECTIVES")
+    print("CONNECTED", sio.sid)
     # Emit authentication / registration
     sio.emit('agent_login', {
         'device_type': 'windows_machine',
@@ -55,13 +51,11 @@ def connect():
 
 @sio.event
 def connect_error(data):
-    print(f"\n❌ CONNECTION_FAILED: {data}")
+    print("CONNECT_ERROR", data)
 
 @sio.event
 def disconnect():
-    print("DISCONNECT_EVENT_TRIGGERED")
-    print("\n❌ DISCONNECTED FROM BACKEND")
-    print("🔄 STANDBY: ATTEMPTING RECONNECTION...")
+    print("DISCONNECTED")
 
 @sio.on('login_success')
 def on_login_success(data):
@@ -266,7 +260,7 @@ if __name__ == "__main__":
             # Polling is too fragile (5s timeouts).
             sio.connect(
                 API_URL,
-                transports=["polling", "websocket"],
+                transports=["websocket"],
                 wait_timeout=60,
                 headers={"Origin": "https://shubham-ai-os-fronted.vercel.app"}
             )

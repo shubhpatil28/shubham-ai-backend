@@ -16,37 +16,8 @@ import signal
 import traceback
 
 # ══════════════════════════════════════════════════════════════
-# 1. FORENSIC DIAGNOSTICS & LIFECYCLE HOOKS
+# 1. LOGGING & CONFIGURATION
 # ══════════════════════════════════════════════════════════════
-print(f"PROCESS_START PID={os.getpid()}")
-
-def signal_handler(signum, frame):
-    print(f"SIGNAL_RECEIVED {signum}")
-
-# Register handlers for termination and interrupt signals
-signal.signal(signal.SIGTERM, signal_handler)
-signal.signal(signal.SIGINT, signal_handler)
-
-# Attempt to catch Gunicorn's timeout alarm if supported
-try:
-    signal.signal(signal.SIGALRM, signal_handler)
-except Exception:
-    pass
-
-def on_exit():
-    print(f"PROCESS_EXIT PID={os.getpid()}")
-atexit.register(on_exit)
-
-def global_exception(exc_type, exc_value, exc_tb):
-    print("UNHANDLED_EXCEPTION_INITIATED")
-    traceback.print_exception(exc_type, exc_value, exc_tb)
-sys.excepthook = global_exception
-
-# ══════════════════════════════════════════════════════════════
-# 2. STARTUP LOGGING & CONFIGURATION
-# ══════════════════════════════════════════════════════════════
-print("🚀 SHUBHAM AI OS Backend Starting...")
-
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -68,10 +39,10 @@ socketio = SocketIO(
     app,
     cors_allowed_origins="*",
     async_mode='eventlet',
+    manage_session=False,
     logger=True,
     engineio_logger=True,
-    allow_upgrades=True,
-    ping_timeout=120,
+    ping_timeout=60,
     ping_interval=25
 )
 
@@ -85,6 +56,7 @@ sid_to_agent = {}
 
 @socketio.on('connect')
 def handle_connect():
+    print(f"SERVER_CONNECT sid={request.sid}")
     logger.info(f"CLIENT_CONNECTED: sid={request.sid}")
 
 @socketio.on('agent_login')
@@ -107,11 +79,13 @@ def handle_agent_login(data):
     sid_to_agent[request.sid] = agent_id
     
     print("LOGIN_PID", os.getpid())
-    print("AGENT_LOGIN_RECEIVED", request.sid, data)
-    print("ACTIVE_AGENTS_AFTER_LOGIN", active_agents)
-    
+    print(f"AGENT_LOGIN_RECEIVED sid={request.sid}")
     logger.info(f"AGENT_REGISTERED: agent_id={agent_id} sid={request.sid}")
     emit('login_success', {'status': 'authenticated'})
+
+@socketio.on_error_default
+def error_handler(e):
+    print("SOCKET_ERROR", e)
 
 @socketio.on('heartbeat')
 def handle_heartbeat(data):
@@ -127,19 +101,13 @@ def handle_heartbeat(data):
 @socketio.on('disconnect')
 def handle_disconnect():
     sid = request.sid
-    print("DISCONNECT_PID", os.getpid())
-    print("DISCONNECT_RECEIVED", request.sid)
-    print("ACTIVE_AGENTS_BEFORE_DISCONNECT", active_agents)
-    
+    print(f"SERVER_DISCONNECT sid={sid}")
     agent_id = sid_to_agent.pop(sid, None)
     if agent_id and agent_id in active_agents:
         # Only remove the agent if the disconnecting SID is the CURRENT one for that agent
         if active_agents[agent_id].get("sid") == sid:
             active_agents.pop(agent_id)
-            print("ACTIVE_AGENTS_AFTER_DISCONNECT", active_agents)
             logger.info(f"AGENT_DISCONNECTED: sid={sid} agent_id={agent_id}")
-        else:
-            logger.info(f"STALE_DISCONNECT_IGNORED: agent_id={agent_id} sid={sid}")
     logger.info(f"CLIENT_DISCONNECTED: sid={sid}")
 
 @app.route("/api/agent/status")
@@ -461,7 +429,7 @@ def system_command():
             'command': command,
             'confirmed': confirmed,
             'timestamp': datetime.datetime.now().isoformat()
-        }, room=target_agent["sid"], namespace='/')
+        }, room=target_agent["sid"])
 
         logger.info("COMMAND_DISPATCHED", command)
         return jsonify({
