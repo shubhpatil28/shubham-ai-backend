@@ -28,7 +28,7 @@ app = Flask(__name__)
 # Enable CORS for React development server
 CORS(app)
 # Initialize SocketIO for real-time bi-directional communication
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Initialize WhatsApp Selenium Worker
 whatsapp_service = WhatsAppService()

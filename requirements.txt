@@ -1,7 +1,7 @@
 flask
 flask-cors
 flask-sqlalchemy
-gunicorn<25
+gunicorn==22.0.0
 requests
 groq
 marshmallow

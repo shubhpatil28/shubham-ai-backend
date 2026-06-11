@@ -1,5 +1,6 @@
 import eventlet
 eventlet.monkey_patch()
+# pyrefly: ignore [missing-import]
 
 import os
 from app import app, socketio
