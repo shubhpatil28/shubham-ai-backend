@@ -1,3 +1,9 @@
+try:
+    import eventlet
+    eventlet.monkey_patch(all=True)
+except ImportError:
+    pass
+
 from flask import Flask, request, jsonify, Response, current_app
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
