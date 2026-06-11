@@ -1,9 +1,3 @@
-try:
-    import eventlet
-    eventlet.monkey_patch(all=True)
-except ImportError:
-    pass
-
 from flask import Flask, request, jsonify, Response, current_app
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -214,9 +208,23 @@ except Exception as e:
     logger.error(f"AI Init Failed: {e}")
     client = None
 
+# Lazy database initialization
+_db_initialized = False
+
+def ensure_db_ready():
+    global _db_initialized
+    if not _db_initialized:
+        with app.app_context():
+            db.create_all()
+            print("✅ Database verified (Lazy Init)")
+        _db_initialized = True
+
 with app.app_context():
-    db.create_all()
-    print("✅ Database tables created (including planner_tasks)")
+    # We still try once, but silently if it fails during master process load
+    try:
+        db.create_all()
+    except Exception:
+        pass
 
 # ══════════════════════════════════════════════════════════════
 # 5. ROUTES (WITH EXPLICIT OPTIONS SUPPORT)
