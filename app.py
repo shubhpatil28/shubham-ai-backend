@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, request, jsonify, Response, current_app
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -54,10 +57,7 @@ sid_to_agent = {}
 # SocketIO Events for Agent
 # ══════════════════════════════════════════════════════════════
 
-@socketio.on('connect')
-def handle_connect():
-    print(f"SERVER_CONNECT sid={request.sid}")
-    logger.info(f"CLIENT_CONNECTED: sid={request.sid}")
+
 
 @socketio.on('agent_login')
 def handle_agent_login(data):
@@ -215,16 +215,18 @@ def ensure_db_ready():
     global _db_initialized
     if not _db_initialized:
         with app.app_context():
-            db.create_all()
-            print("✅ Database verified (Lazy Init)")
-        _db_initialized = True
+            try:
+                db.create_all()
+                print("✅ Database verified (Lazy Init)")
+                _db_initialized = True
+            except Exception as e:
+                logger.error(f"Lazy Init Error: {e}")
 
-with app.app_context():
-    # We still try once, but silently if it fails during master process load
-    try:
-        db.create_all()
-    except Exception:
-        pass
+@socketio.on('connect')
+def handle_connect():
+    ensure_db_ready()
+    print(f"SERVER_CONNECT sid={request.sid}")
+    logger.info(f"CLIENT_CONNECTED: sid={request.sid}")
 
 # ══════════════════════════════════════════════════════════════
 # 5. ROUTES (WITH EXPLICIT OPTIONS SUPPORT)

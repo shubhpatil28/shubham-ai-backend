@@ -3,7 +3,7 @@ import { Plus, Check, Trash2, Calendar, Clock } from 'lucide-react';
 import { safeFetch } from '../config/api';
 import GlassLoader from './GlassLoader';
 
-const Planner = () => {
+const Planner = ({ className = "" }) => {
   console.log("APP_COMPONENT_MOUNTED", "Planner.jsx");
   const [tasks, setTasks] = useState([]);
   const [newTitle, setNewTitle] = useState('');
@@ -60,7 +60,7 @@ const Planner = () => {
   };
 
   return (
-    <div className="glass-panel p-5 flex flex-col h-[340px] overflow-hidden">
+    <div className={`glass-panel p-5 flex flex-col h-[340px] overflow-hidden ${className}`}>
       <div className="flex items-center justify-between mb-4 pb-2 border-b border-cyan-500/10">
         <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-[#00f3ff] flex items-center gap-2">
           <Calendar size={14} /> DAILY SCHEDULER

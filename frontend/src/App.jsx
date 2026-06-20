@@ -455,12 +455,14 @@ const App = () => {
                       </div>
 
                       {/* Right HUD Panel - Intelligence & Planning */}
-                      <div className="flex flex-col gap-6 h-full p-2">
+                      <div className="flex flex-col gap-6 h-full p-2 w-full min-w-0">
                         <IntelligenceFeed />
                         <TaskPipeline currentStage={currentStage} activeAgentId={activeAgentId} taskName={activeTaskName} />
-                        <TabModule name="Planner">
-                           <Planner />
-                        </TabModule>
+                        <div className="w-full flex-1 min-w-0">
+                          <TabModule name="Planner">
+                             <Planner className="w-full" />
+                          </TabModule>
+                        </div>
                       </div>
                     </motion.div>
                   )}
