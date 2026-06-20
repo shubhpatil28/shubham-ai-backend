@@ -15,7 +15,7 @@ from pathlib import Path
 # received from the cloud backend.
 
 # Configuration
-API_URL = "https://shubham-ai-backend.onrender.com"
+API_URL = os.environ.get("API_URL", "https://shubham-ai-backend.onrender.com")
 DEVICE_ID = str(uuid.getnode())
 
 # reconnection=False: the manual while-True loop below is the ONLY reconnect

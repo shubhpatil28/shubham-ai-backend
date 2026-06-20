@@ -81,6 +81,7 @@ def handle_agent_login(data):
     print("LOGIN_PID", os.getpid())
     print(f"AGENT_LOGIN_RECEIVED sid={request.sid}")
     logger.info(f"AGENT_REGISTERED: agent_id={agent_id} sid={request.sid}")
+    logger.info(f"AGENT_CONNECTED | Agent ID: {agent_id} | ACTIVE_AGENT_COUNT: {len(active_agents)}")
     emit('login_success', {'status': 'authenticated'})
 
 @socketio.on_error_default
@@ -108,6 +109,7 @@ def handle_disconnect():
         if active_agents[agent_id].get("sid") == sid:
             active_agents.pop(agent_id)
             logger.info(f"AGENT_DISCONNECTED: sid={sid} agent_id={agent_id}")
+            logger.info(f"AGENT_DISCONNECTED | Agent ID: {agent_id} | ACTIVE_AGENT_COUNT: {len(active_agents)}")
     logger.info(f"CLIENT_DISCONNECTED: sid={sid}")
 
 @app.route("/api/agent/status")
@@ -337,6 +339,7 @@ def delete_memory(id):
 @app.route('/api/planner', methods=['GET', 'POST', 'OPTIONS'])
 def planner_list():
     """GET → return task array, POST → create a task."""
+    ensure_db_ready()
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
 
