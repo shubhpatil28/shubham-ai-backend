@@ -38,9 +38,12 @@ ALLOWED_ORIGINS = [
     "http://localhost:5174",
 ]
 
+# Use "*" for Flask-CORS so Render cold-start doesn't drop OPTIONS preflights
+CORS_POLICY = "*"
+
 socketio = SocketIO(
     app,
-    cors_allowed_origins="*",
+    cors_allowed_origins=ALLOWED_ORIGINS,
     async_mode='eventlet',
     manage_session=False,
     logger=True,
@@ -142,13 +145,12 @@ app.config['SECRET_KEY'] = SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Primary CORS Configuration
-# Set supports_credentials=False for cross-origin compatibility without cookies
+# Primary CORS Configuration — wildcard so Render cold-start doesn't eat preflight
 CORS(
     app,
     resources={
         r"/*": {
-            "origins": ALLOWED_ORIGINS
+            "origins": CORS_POLICY  # "*" — broadest, no credentials
         }
     },
     supports_credentials=False
@@ -240,10 +242,17 @@ def status():
     return jsonify({
         "status": "online",
         "system": "SHUBHAM AI OS",
-        "version": "4.0.7-FORENSIC-V2",
+        "version": "4.0.8-CORS-STABLE",
         "pid": os.getpid(),
         "time": datetime.datetime.utcnow().isoformat()
     })
+
+@app.route("/api/ping", methods=["GET", "OPTIONS"])
+def ping():
+    """Ultra-light keep-alive endpoint — no DB, no auth. Used by frontend to prevent Render cold-start."""
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+    return jsonify({"pong": True, "time": datetime.datetime.utcnow().isoformat()}), 200
 
 @app.route("/api/chat", methods=["POST", "OPTIONS"])
 def chat():
