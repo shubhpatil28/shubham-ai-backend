@@ -256,13 +256,13 @@ if __name__ == "__main__":
     while True:
         try:
             print(f"🔄 ATTEMPTING_CONNECTION: {API_URL}")
-            # WebSocket is mandatory for stability on Render free tier.
-            # Polling is too fragile (5s timeouts).
+            # Polling FIRST: Socket.IO EIO=4 requires an HTTP polling handshake
+            # to exchange the sid before upgrading to WebSocket.
             sio.connect(
                 API_URL,
-                transports=["websocket"],
+                transports=["polling", "websocket"],  # polling first: required for EIO=4 handshake
                 wait_timeout=60,
-                headers={"Origin": "https://shubham-ai-os-fronted.vercel.app"}
+                headers={"Origin": "https://shubham-ai-os-frontend.vercel.app"}
             )
             reconnect_delay = 5  # reset on successful connect
             print(f"CONNECTION_ESTABLISHED: sid={sio.sid} entering wait loop")
